@@ -1,14 +1,12 @@
 import type { NextConfig } from "next";
-
-const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "/user_dashboard";
-const legacyBasePaths = ["/dashboard", "/dahboard"].filter(
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "/dashboard";
+const legacyBasePaths = ["/dashboard", "/dahboard/dashboard"].filter(
   (path) => path !== basePath
 );
 const externalRedirect = {
   basePath: false as const,
   permanent: false,
 };
-
 const nextConfig: NextConfig = {
   basePath,
   async redirects() {
@@ -33,5 +31,4 @@ const nextConfig: NextConfig = {
     ];
   },
 };
-
 export default nextConfig;

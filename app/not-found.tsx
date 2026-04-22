@@ -80,10 +80,10 @@ export default function NotFoundPage() {
                   <Link
                     key={item.title}
                     href={item.href}
-                    className="group rounded-lg border border-border bg-brand-surface p-4 transition-all hover:border-primary"
+                    className="group rounded-sm border border-border bg-brand-surface p-4 transition-all hover:border-primary"
                   >
                     <div className="mb-3 flex items-center gap-3">
-                      <div className="rounded-lg border border-primary/20 bg-primary/10 p-2 text-primary">
+                      <div className="rounded-sm border border-primary/20 bg-primary/10 p-2 text-primary">
                         {index % 2 === 0 ? (
                           <Package className="h-4 w-4" />
                         ) : (
