@@ -5,7 +5,7 @@ import * as React from "react"
 import { Button } from "@/components/ui/button"
 
 import { FilterBar } from "../shared/filter-bar"
-import { SummaryStatGrid } from "../shared/summary-stat-grid"
+import { SummaryStatGrid } from "@/components/summary-stat-grid"
 import { rfqFilters, rfqs, rfqStats } from "./data"
 import { RfqTable } from "./rfq-table"
 import type { RfqFilter } from "./types"
