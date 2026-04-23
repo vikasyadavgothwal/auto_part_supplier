@@ -237,7 +237,7 @@ export const dashboardPageData: DashboardPageData = {
     },
     {
       title: "Revenue",
-      value: "$12,450",
+      value: "AED 12,450",
       subtext: "↑ 18% vs last month",
       highlight: true,
     },
@@ -384,7 +384,7 @@ export const bookingsPageData: BookingsPageData = {
     },
     {
       title: "Expected Revenue",
-      value: "$285",
+      value: "AED 285",
       valueClass: "text-primary",
       showIcon: false,
     },
@@ -397,7 +397,7 @@ export const bookingsPageData: BookingsPageData = {
       customer: "John Doe",
       vehicle: "2019 Toyota Camry",
       service: "Oil Change",
-      revenue: "$45.00",
+      revenue: "AED 45.00",
       status: "Confirmed",
       statusClass:
         "border-brand-success/20 bg-brand-success/10 text-brand-success hover:bg-brand-success/10",
@@ -409,7 +409,7 @@ export const bookingsPageData: BookingsPageData = {
       customer: "Jane Smith",
       vehicle: "2021 Honda Accord",
       service: "Brake Service",
-      revenue: "$120.00",
+      revenue: "AED 120.00",
       status: "Confirmed",
       statusClass:
         "border-brand-success/20 bg-brand-success/10 text-brand-success hover:bg-brand-success/10",
@@ -421,7 +421,7 @@ export const bookingsPageData: BookingsPageData = {
       customer: "Mike Johnson",
       vehicle: "2020 Ford F-150",
       service: "Tire Rotation",
-      revenue: "$35.00",
+      revenue: "AED 35.00",
       status: "Confirmed",
       statusClass:
         "border-brand-success/20 bg-brand-success/10 text-brand-success hover:bg-brand-success/10",
@@ -433,7 +433,7 @@ export const bookingsPageData: BookingsPageData = {
       customer: "Sarah Williams",
       vehicle: "2018 Chevrolet Silverado",
       service: "AC Service",
-      revenue: "$85.00",
+      revenue: "AED 85.00",
       status: "Pending",
       statusClass:
         "border-brand-warning/20 bg-brand-warning/10 text-brand-warning hover:bg-brand-warning/10",
@@ -467,7 +467,7 @@ export const servicesPageData: ServicesPageData = {
     },
     {
       title: "Avg. Price",
-      value: "$71.25",
+      value: "AED 71.25",
       valueClass: "text-foreground",
     },
   ],
@@ -477,7 +477,7 @@ export const servicesPageData: ServicesPageData = {
       name: "Oil Change",
       category: "Maintenance",
       duration: "30 min",
-      price: "$45.00",
+      price: "AED 45.00",
       bookings: "24 total",
       status: "Active",
       statusClass:
@@ -488,7 +488,7 @@ export const servicesPageData: ServicesPageData = {
       name: "Brake Service",
       category: "Repairs",
       duration: "90 min",
-      price: "$120.00",
+      price: "AED 120.00",
       bookings: "18 total",
       status: "Active",
       statusClass:
@@ -499,7 +499,7 @@ export const servicesPageData: ServicesPageData = {
       name: "Tire Rotation",
       category: "Maintenance",
       duration: "45 min",
-      price: "$35.00",
+      price: "AED 35.00",
       bookings: "32 total",
       status: "Active",
       statusClass:
@@ -510,7 +510,7 @@ export const servicesPageData: ServicesPageData = {
       name: "AC Service",
       category: "Repairs",
       duration: "60 min",
-      price: "$85.00",
+      price: "AED 85.00",
       bookings: "12 total",
       status: "Inactive",
       statusClass:

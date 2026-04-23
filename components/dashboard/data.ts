@@ -1,5 +1,5 @@
 import {
-  DollarSign,
+  Banknote,
   FileText,
   Package,
   ShoppingCart,
@@ -20,13 +20,13 @@ import type {
 export const dashboardStats: readonly DashboardStat[] = [
   {
     label: "Today's Revenue",
-    value: "$2,450",
+    value: "AED 2,450",
     change: "↑ 12% vs yesterday",
-    icon: DollarSign,
+    icon: Banknote,
   },
   {
     label: "Monthly Revenue",
-    value: "$48,920",
+    value: "AED 48,920",
     change: "↑ 23% vs last month",
     icon: TrendingUp,
   },
@@ -104,7 +104,7 @@ export const recentOrders: readonly RecentOrder[] = [
     customer: "John Doe",
     part: "Brake Pads",
     qty: "1 Set",
-    amount: "$89.99",
+    amount: "AED 89.99",
     status: "Processing",
   },
   {
@@ -112,7 +112,7 @@ export const recentOrders: readonly RecentOrder[] = [
     customer: "Jane Smith",
     part: "Oil Filter",
     qty: "2",
-    amount: "$49.98",
+    amount: "AED 49.98",
     status: "Shipped",
   },
 ]

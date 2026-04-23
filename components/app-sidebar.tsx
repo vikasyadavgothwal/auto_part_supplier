@@ -7,7 +7,7 @@ import {
   Inbox,
   Package,
   Box,
-  DollarSign,
+  Coins,
   BarChart2,
   Settings,
 } from "lucide-react"
@@ -29,7 +29,7 @@ const items = [
   { title: "RFQ Inbox", url: appRoutes.rfqInbox, icon: Inbox },
   { title: "Orders", url: appRoutes.orders, icon: Package },
   { title: "Inventory", url: appRoutes.inventory, icon: Box },
-  { title: "Offers", url: appRoutes.offers, icon: DollarSign },
+  { title: "Offers", url: appRoutes.offers, icon: Coins },
   { title: "Performance", url: appRoutes.performance, icon: BarChart2 },
 ]
 

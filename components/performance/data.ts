@@ -1,6 +1,6 @@
 import {
+  Banknote,
   Clock3,
-  DollarSign,
   Package,
   Star,
   TrendingUp,
@@ -16,10 +16,10 @@ import type {
 export const performanceMetrics: readonly PerformanceMetric[] = [
   {
     title: "Monthly Revenue",
-    value: "$48,920",
+    value: "AED 48,920",
     subtitle: "Up 23% vs last month",
     subtitleClassName: "text-primary",
-    icon: DollarSign,
+    icon: Banknote,
   },
   {
     title: "Customer Rating",
@@ -63,25 +63,25 @@ export const topSellingProducts: readonly TopSellingProduct[] = [
     rank: 1,
     name: "Brake Pads - Front",
     unitsSold: "45 units sold",
-    revenue: "$4,049.55",
+    revenue: "AED 4,049.55",
   },
   {
     rank: 2,
     name: "Oil Filter",
     unitsSold: "89 units sold",
-    revenue: "$1,156.11",
+    revenue: "AED 1,156.11",
   },
   {
     rank: 3,
     name: "Air Filter",
     unitsSold: "67 units sold",
-    revenue: "$1,339.33",
+    revenue: "AED 1,339.33",
   },
   {
     rank: 4,
     name: "Spark Plugs",
     unitsSold: "124 units sold",
-    revenue: "$1,395.00",
+    revenue: "AED 1,395.00",
   },
 ]
 
