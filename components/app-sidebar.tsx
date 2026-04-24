@@ -32,10 +32,8 @@ const items = [
   { title: "Offers", url: appRoutes.offers, icon: Coins },
   { title: "Performance", url: appRoutes.performance, icon: BarChart2 },
 ]
-
 export function AppSidebar() {
   const currentPath = stripBasePath(usePathname())
-
   return (
     <Sidebar className="border-sidebar-border bg-brand-panel text-foreground">
       <SidebarHeader className="border-b border-border px-6 py-6">
@@ -50,11 +48,9 @@ export function AppSidebar() {
         <SidebarMenu className="space-y-1">
           {items.map((item) => {
             const Icon = item.icon
-
             const isActive =
               currentPath === item.url ||
               currentPath.startsWith(`${item.url}/`)
-
             return (
               <SidebarMenuItem key={item.title}>
                 <SidebarMenuButton

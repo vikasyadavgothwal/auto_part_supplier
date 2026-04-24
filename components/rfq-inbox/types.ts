@@ -1,4 +1,4 @@
-import type { SummaryStat } from "../shared/summary-stat-grid"
+import type { SummaryStat } from "@/components/summary-stat-grid"
 
 export type RfqStat = SummaryStat
 
