@@ -4,11 +4,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
   House,
-  Inbox,
-  Package,
   Box,
-  Coins,
-  BarChart2,
   Settings,
 } from "lucide-react"
 

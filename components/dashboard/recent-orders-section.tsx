@@ -47,7 +47,7 @@ export function RecentOrdersSection({ orders }: RecentOrdersSectionProps) {
                 {headers.map((header) => (
                   <TableHead
                     key={header}
-                    className="text-[#9CA3AF] font-semibold"
+                    className="text-[#9CA3AF] font-semibold text-center "
                   >
                     {header}
                   </TableHead>
@@ -60,18 +60,18 @@ export function RecentOrdersSection({ orders }: RecentOrdersSectionProps) {
                   key={order.id}
                   className="border-[#2A2A2A] hover:bg-[#2A2A2A] cursor-pointer transition-colors"
                 >
-                  <TableCell className="text-[#9CA3AF]">{order.id}</TableCell>
-                  <TableCell className="text-[#9CA3AF]">
+                  <TableCell className="text-[#9CA3AF] text-center">{order.id}</TableCell>
+                  <TableCell className="text-[#9CA3AF] text-center">
                     {order.customer}
                   </TableCell>
-                  <TableCell className="text-[#9CA3AF]">{order.part}</TableCell>
-                  <TableCell className="text-[#9CA3AF]">{order.qty}</TableCell>
-                  <TableCell>
+                  <TableCell className="text-[#9CA3AF] text-center">{order.part}</TableCell>
+                  <TableCell className="text-[#9CA3AF] text-center">{order.qty}</TableCell>
+                  <TableCell className="text-center">
                     <span className="font-semibold text-white">
                       {order.amount}
                     </span>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="text-center">
                     <OrderStatusBadge status={order.status} />
                   </TableCell>
                 </TableRow>

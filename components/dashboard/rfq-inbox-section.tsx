@@ -43,13 +43,13 @@ export function RfqInboxSection({ rfqs }: RfqInboxSectionProps) {
       </div>
       <Card className="bg-[#1A1A1A] border-[#2A2A2A] py-0">
         <div className="overflow-x-auto">
-          <Table>
+          <Table >
             <TableHeader>
               <TableRow className="border-[#2A2A2A] bg-[#0A0A0A] hover:bg-[#0A0A0A]">
                 {headers.map((header) => (
                   <TableHead
                     key={header}
-                    className="text-[#9CA3AF] font-semibold"
+                    className="text-[#9CA3AF] font-semibold text-center"
                   >
                     {header}
                   </TableHead>
@@ -62,13 +62,13 @@ export function RfqInboxSection({ rfqs }: RfqInboxSectionProps) {
                   key={rfq.id}
                   className="border-[#2A2A2A] hover:bg-[#2A2A2A] cursor-pointer transition-colors"
                 >
-                  <TableCell className="text-[#9CA3AF]">{rfq.id}</TableCell>
-                  <TableCell className="text-[#9CA3AF]">
+                  <TableCell className="text-[#9CA3AF] text-center">{rfq.id}</TableCell>
+                  <TableCell className="text-[#9CA3AF] text-center">
                     {rfq.vehicle}
                   </TableCell>
-                  <TableCell className="text-[#9CA3AF]">{rfq.part}</TableCell>
-                  <TableCell className="text-[#9CA3AF]">{rfq.qty}</TableCell>
-                  <TableCell>
+                  <TableCell className="text-[#9CA3AF] text-center">{rfq.part}</TableCell>
+                  <TableCell className="text-[#9CA3AF] text-center">{rfq.qty}</TableCell>
+                  <TableCell className="text-center">
                     <span
                       className={
                         rfq.deadlineUrgent
@@ -79,10 +79,10 @@ export function RfqInboxSection({ rfqs }: RfqInboxSectionProps) {
                       {rfq.deadline}
                     </span>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="text-center">
                     <RfqStatusBadge status={rfq.status} />
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="text-center">
                     <Button
                       size="sm"
                       className="bg-[#DC2626] hover:bg-[#B91C1C] text-white rounded-sm px-4"
