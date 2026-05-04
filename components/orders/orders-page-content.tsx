@@ -18,8 +18,8 @@ export function OrdersPageContent() {
   }, [activeFilter])
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div className="mx-auto max-w-[1600px] space-y-8 p-6 lg:p-8">
+    <div className="min-h-screen min-w-0 bg-background text-foreground">
+      <div className="mx-auto min-w-0 max-w-[1600px] space-y-8 overflow-x-hidden p-6 lg:p-8">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground">
             Orders
