@@ -43,7 +43,7 @@ export function InventoryProductsTable({
   products,
 }: InventoryProductsTableProps) {
   return (
-    <Card className="surface-card overflow-hidden rounded-sm shadow-none">
+    <Card className="surface-card overflow-hidden rounded-sm shadow-none py-0">
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>

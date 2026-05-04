@@ -41,7 +41,7 @@ export function RfqInboxSection({ rfqs }: RfqInboxSectionProps) {
           View All
         </Link>
       </div>
-      <Card className="bg-[#1A1A1A] border-[#2A2A2A]">
+      <Card className="bg-[#1A1A1A] border-[#2A2A2A] py-0">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>

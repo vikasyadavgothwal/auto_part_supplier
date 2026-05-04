@@ -36,7 +36,7 @@ const tableHeaders = [
 
 export function OrdersTable({ orders }: OrdersTableProps) {
   return (
-    <Card className="surface-card overflow-hidden rounded-sm shadow-none">
+    <Card className="surface-card overflow-hidden rounded-sm shadow-none py-0">
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
