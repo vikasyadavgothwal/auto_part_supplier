@@ -2,19 +2,28 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
-First, run the development server:
+First, install dependencies:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Then run the development server:
+
+```bash
+pnpm dev
+```
+
+Build and start the production server with:
+
+```bash
+pnpm build
+pnpm start
+```
+
+This project is pnpm-only. `npm`, `yarn`, and `bun` are blocked by lifecycle guards in `package.json`.
+
+Open [http://localhost:3004](http://localhost:3004) with your browser to see the result.
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
