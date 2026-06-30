@@ -25,6 +25,7 @@ export function mapSupplierPartToProduct(part: SupplierPartApiRecord): Product {
 
   return {
     id: part.id,
+    vendorSku: part.vendorSku,
     partNumber,
     productName: part.part?.partName ?? part.originalPartName,
     brand: part.part?.brandName ?? part.originalBrand ?? "Unbranded",
@@ -38,9 +39,16 @@ export function mapSupplierPartToProduct(part: SupplierPartApiRecord): Product {
     mappingStatus,
     vehicles: part.mappingStatus === "mapped" ? "Mapped" : "Pending",
     category: part.part?.category ?? part.category ?? "Not provided",
+    oemSupersessionNumbers: part.oemSupersessionNumbers ?? [],
+    competitorPartNumber: part.competitorPartNumber ?? null,
+    competitorBrandName: part.competitorBrandName ?? null,
+    hsCode: part.hsCode ?? null,
     mappingError: part.mappingError,
     source: part.part?.source ?? null,
-    imageUrls: part.part?.imageUrls ?? [],
+    imageUrls:
+      part.supplierImageUrls?.length > 0
+        ? part.supplierImageUrls
+        : (part.part?.imageUrls ?? []),
     imageKeys: part.part?.imageKeys ?? [],
     badgeText: part.part?.badgeText ?? null,
     heading: part.part?.heading ?? null,

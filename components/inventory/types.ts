@@ -13,6 +13,7 @@ export type SupplierMappingStatus =
 
 export type Product = {
   id?: string
+  vendorSku: string | null
   partNumber: string
   productName: string
   brand: string
@@ -25,6 +26,10 @@ export type Product = {
   mappingStatus: SupplierMappingStatus
   vehicles: string
   category: string
+  oemSupersessionNumbers: string[]
+  competitorPartNumber: string | null
+  competitorBrandName: string | null
+  hsCode: string | null
   mappingError: string | null
   source: string | null
   imageUrls: string[]
@@ -44,6 +49,7 @@ export type SupplierPartMappingStatusApi =
 
 export type SupplierPartApiRecord = {
   id: string
+  vendorSku: string | null
   originalPartName: string
   originalBrand: string | null
   originalMpn: string | null
@@ -52,6 +58,11 @@ export type SupplierPartApiRecord = {
   stock: number
   currency: string
   category: string | null
+  oemSupersessionNumbers: string[]
+  competitorPartNumber: string | null
+  competitorBrandName: string | null
+  hsCode: string | null
+  supplierImageUrls: string[]
   mappingStatus: SupplierPartMappingStatusApi
   mappingError: string | null
   createdAt: string
@@ -85,6 +96,39 @@ export type SupplierPartCreateResponse = {
 }
 
 export type SupplierPartUpdateResponse = SupplierPartCreateResponse
+
+export type BulkUnmappedRow = {
+  rowNumber: number
+  vendorSku: string
+  oemNumber?: string
+  reason: string
+}
+
+export type ProductBulkUploadSummary = {
+  totalRows: number
+  mappedCount: number
+  localMappedCount: number
+  vin17MappedCount: number
+  unmappedCount: number
+  mappedParts: SupplierPartApiRecord[]
+  unmapped: BulkUnmappedRow[]
+  unmatchedImageRows: BulkUnmappedRow[]
+}
+
+export type ImageBulkUploadSummary = {
+  totalRows: number
+  updatedCount: number
+  unmatchedCount: number
+  updatedParts: SupplierPartApiRecord[]
+  unmatched: BulkUnmappedRow[]
+}
+
+export type BulkUploadResponse = {
+  ok: boolean
+  mode?: "products" | "images"
+  summary?: ProductBulkUploadSummary | ImageBulkUploadSummary
+  message?: string
+}
 
 export type CreateSupplierPartPayload = {
   partUid?: string

@@ -49,7 +49,7 @@ type InventoryProductsTableProps = {
 }
 
 const tableHeaders = [
-  { label: "Part #", className: "min-w-[110px] px-6 py-4 text-brand-muted" },
+  { label: "Vendor SKU", className: "min-w-[130px] px-6 py-4 text-brand-muted" },
   {
     label: "Product Name",
     className: "min-w-[220px] px-6 py-4 text-brand-muted",
@@ -157,7 +157,7 @@ export function InventoryProductsTable({
               >
                 <TableCell className="px-6 py-4 text-sm text-brand-muted">
                   <span className="font-medium text-primary">
-                    {product.partNumber}
+                    {product.vendorSku ?? product.partNumber}
                   </span>
                 </TableCell>
                 <TableCell className="px-6 py-4 text-sm text-brand-muted">
@@ -249,10 +249,25 @@ export function InventoryProductsTable({
                 <p><strong>Category:</strong> {selectedProduct.category}</p>
                 <p><strong>MPN:</strong> {selectedProduct.partNumber}</p>
                 <p><strong>OEM:</strong> {selectedProduct.oemNumber}</p>
+                <p><strong>Vendor SKU:</strong> {selectedProduct.vendorSku ?? "-"}</p>
+                <p><strong>HS code:</strong> {selectedProduct.hsCode ?? "-"}</p>
                 <p><strong>Price:</strong> {selectedProduct.price}</p>
                 <p><strong>Quantity:</strong> {selectedProduct.stock}</p>
                 <p><strong>Status:</strong> {selectedProduct.mappingStatus}</p>
                 <p><strong>Vehicle mapping:</strong> {selectedProduct.vehicles}</p>
+              </div>
+
+              <div className="grid gap-3 rounded-sm border border-border p-4 text-sm sm:grid-cols-2">
+                <p>
+                  <strong>OEM supersessions:</strong>{" "}
+                  {selectedProduct.oemSupersessionNumbers.join(", ") || "-"}
+                </p>
+                <p>
+                  <strong>Competitor:</strong>{" "}
+                  {[selectedProduct.competitorBrandName, selectedProduct.competitorPartNumber]
+                    .filter(Boolean)
+                    .join(" · ") || "-"}
+                </p>
               </div>
 
               {selectedProduct.mappingError ? (

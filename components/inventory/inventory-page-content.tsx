@@ -25,6 +25,7 @@ import { Label } from "@/components/ui/label"
 import { authenticatedFetch } from "@/lib/auth/client"
 
 import { SummaryStatGrid } from "@/components/summary-stat-grid"
+import { BulkImportDialog } from "./bulk-import-dialog"
 import { InventoryProductsTable } from "./inventory-products-table"
 import { buildInventoryStats, mapSupplierPartToProduct } from "./mappers"
 import type {
@@ -56,6 +57,7 @@ export function InventoryPageContent({
 }: InventoryPageContentProps) {
   const [products, setProducts] = useState<Product[]>(initialProducts)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [isBulkDialogOpen, setIsBulkDialogOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isLookingUp, setIsLookingUp] = useState(false)
   const [lookupResult, setLookupResult] =
@@ -256,6 +258,7 @@ export function InventoryPageContent({
             <Button
               variant="outline"
               className="h-12 rounded-sm border-border bg-brand-panel-strong px-6 text-foreground hover:border-primary hover:bg-brand-panel-strong"
+              onClick={() => setIsBulkDialogOpen(true)}
             >
               <Upload className="mr-2 h-5 w-5" />
               Import CSV
@@ -534,6 +537,24 @@ export function InventoryPageContent({
           )}
         </DialogContent>
       </Dialog>
+
+      <BulkImportDialog
+        open={isBulkDialogOpen}
+        onOpenChange={setIsBulkDialogOpen}
+        onProductsImported={(importedProducts) => {
+          setProducts((currentProducts) => {
+            const importedById = new Map(
+              importedProducts.map((product) => [product.id, product]),
+            )
+            return [
+              ...importedProducts,
+              ...currentProducts.filter(
+                (product) => !importedById.has(product.id),
+              ),
+            ]
+          })
+        }}
+      />
     </div>
   )
 }

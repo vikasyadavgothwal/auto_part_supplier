@@ -8,7 +8,12 @@ export const inventoryStats: readonly InventoryStat[] = [
 ]
 
 const emptyProductContent = {
+  vendorSku: null,
   category: "Not provided",
+  oemSupersessionNumbers: [] as string[],
+  competitorPartNumber: null,
+  competitorBrandName: null,
+  hsCode: null,
   mappingError: null,
   source: null,
   imageUrls: [] as string[],
