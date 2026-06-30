@@ -37,6 +37,7 @@ export function VehicleForm({
   const [values, setValues] = useState<VehicleFormValues>(initialValues)
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setValues(initialValues)
   }, [initialValues])
 

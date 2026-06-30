@@ -25,6 +25,28 @@ This project is pnpm-only. `npm`, `yarn`, and `bun` are blocked by lifecycle gua
 
 Open [http://localhost:3004](http://localhost:3004) with your browser to see the result.
 
+## Authentication configuration
+
+The dashboard exchanges a Firebase ID token for backend access and refresh
+tokens. The backend tokens remain in HttpOnly cookies and are never stored in
+browser storage.
+
+Configure these values for the dashboard runtime:
+
+```bash
+ADMIN_API_BASE_URL=http://localhost:3000
+NEXT_PUBLIC_FIREBASE_API_KEY=
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
+NEXT_PUBLIC_FIREBASE_APP_ID=
+```
+
+Use the same Firebase web application values as `auto-parts-pro-user`. If the
+Firebase values are omitted, login falls back to backend-managed email and
+password accounts.
+
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
