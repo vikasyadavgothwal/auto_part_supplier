@@ -73,23 +73,11 @@ const productTemplate = [
 ]
 
 const imageTemplate = [
-  [
-    "SKU",
-    "Primary Image URL",
-    "Gallery Image 1",
-    "Gallery Image 2",
-    "Gallery Image 3",
-    "Gallery Image 4",
-    "Gallery Image 5",
-  ],
+  ["Vendor SKU number", "Primary Image URL", "Gallery Image URLs"],
   [
     "BRK-001-BOSCH",
     "https://example.com/images/BRK-001-main.jpg",
-    "https://example.com/images/BRK-001-side.jpg",
-    "https://example.com/images/BRK-001-back.jpg",
-    "",
-    "",
-    "",
+    "https://example.com/images/BRK-001-side.jpg; https://example.com/images/BRK-001-back.jpg",
   ],
 ]
 
@@ -149,7 +137,27 @@ export function BulkImportDialog({
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const formData = new FormData(event.currentTarget)
-    formData.set("mode", mode)
+    const productFile = formData.get("productFile")
+    const imageFile = formData.get("imageFile")
+    const hasProductFile = productFile instanceof File && productFile.size > 0
+    const hasImageFile = imageFile instanceof File && imageFile.size > 0
+    const requestMode =
+      mode === "images" || (!hasProductFile && hasImageFile)
+        ? "images"
+        : "products"
+
+    if (requestMode === "products" && !hasProductFile) {
+      setError("Select a product catalog file, or upload an image CSV for existing SKUs.")
+      setSummary(null)
+      return
+    }
+    if (requestMode === "images" && !hasImageFile) {
+      setError("Select an image CSV or Excel file.")
+      setSummary(null)
+      return
+    }
+
+    formData.set("mode", requestMode)
     setIsUploading(true)
     setError(null)
     setSummary(null)
@@ -233,9 +241,10 @@ export function BulkImportDialog({
                   <div>
                     <p className="font-semibold">Product catalog file</p>
                     <p className="mt-1 text-xs text-brand-muted">
-                      Required columns: Platform Part number (SKU), Vendor SKU
-                      number, and OEM Part Number. Leave the platform SKU blank;
-                      it is not assigned during import.
+                      Required only when importing products. To update images for
+                      existing supplier SKUs, leave this empty and upload the
+                      image file below. Product files require Vendor SKU number
+                      and OEM Part Number; Platform SKU remains blank.
                     </p>
                   </div>
                 </div>
@@ -246,7 +255,6 @@ export function BulkImportDialog({
                     name="productFile"
                     type="file"
                     accept=".csv,.xlsx,.xls"
-                    required
                   />
                 </div>
               </div>
@@ -254,8 +262,10 @@ export function BulkImportDialog({
               <div className="rounded-sm border border-border bg-brand-surface p-4">
                 <p className="font-semibold">Image mapping file (optional)</p>
                 <p className="mt-1 text-xs text-brand-muted">
-                  Images are matched to this supplier&apos;s products by SKU. Up to
-                  one primary and five gallery URLs are stored per row.
+                  Images are matched using this supplier&apos;s Vendor SKU number.
+                  Use one Primary Image URL and place remaining URLs in Gallery
+                  Image URLs, separated by semicolons. Gallery Image 1 through 5
+                  columns are also accepted.
                 </p>
                 <div className="mt-4 space-y-2">
                   <Label htmlFor="bulk-product-images">Image file</Label>
@@ -270,7 +280,7 @@ export function BulkImportDialog({
 
               <Button type="submit" disabled={isUploading} className="w-full sm:w-auto">
                 <Upload />
-                {isUploading ? "Checking OEMs..." : "Import and map products"}
+                {isUploading ? "Processing files..." : "Process import"}
               </Button>
             </form>
           </TabsContent>
@@ -281,7 +291,9 @@ export function BulkImportDialog({
                 <p className="font-semibold">Update images by supplier SKU</p>
                 <p className="mt-1 text-xs text-brand-muted">
                   This updates only your mapped products. Another supplier using
-                  the same SKU is not affected.
+                  the same SKU is not affected. Primary Image URL is separate;
+                  gallery URLs can use one semicolon-separated column or Gallery
+                  Image 1 through 5 columns.
                 </p>
                 <div className="mt-4 space-y-2">
                   <Label htmlFor="bulk-image-file">Image file</Label>
