@@ -38,6 +38,7 @@ export type Product = {
   heading: string | null
   description: string | null
   keyFeatures: string[]
+  rawUploadData?: unknown
 }
 
 export type SupplierPartMappingStatusApi =
@@ -65,6 +66,7 @@ export type SupplierPartApiRecord = {
   supplierImageUrls: string[]
   mappingStatus: SupplierPartMappingStatusApi
   mappingError: string | null
+  rawUploadData?: unknown
   createdAt: string
   updatedAt: string
   part?: {
@@ -86,7 +88,15 @@ export type SupplierPartApiRecord = {
 export type SupplierPartsListResponse = {
   ok: boolean
   parts?: SupplierPartApiRecord[]
+  pagination?: InventoryPagination
   message?: string
+}
+
+export type InventoryPagination = {
+  page: number
+  pageSize: number
+  total: number
+  totalPages: number
 }
 
 export type SupplierPartCreateResponse = {
@@ -97,10 +107,35 @@ export type SupplierPartCreateResponse = {
 
 export type SupplierPartUpdateResponse = SupplierPartCreateResponse
 
+export type UpdateSupplierPartPayload = {
+  vendorSku: string
+  productName: string
+  shortDescription: string
+  longDescription: string
+  mpn: string
+  status: string
+  grade: string
+  condition: string
+  basePrice: number | string
+  discountPrice: number | string
+  currency: string
+  taxClass: string
+  vat: string
+  maxRetailPrice: number | string
+  wholesaleDistributorPrice: number | string
+  fleetPrice: number | string
+  price: number
+  stock: number
+  rawUploadData: unknown
+}
+
 export type BulkUnmappedRow = {
   rowNumber: number
   vendorSku: string
+  brand?: string | null
   oemNumber?: string
+  competitorPartNumber?: string | null
+  competitorBrandName?: string | null
   reason: string
 }
 
@@ -123,22 +158,33 @@ export type ImageBulkUploadSummary = {
   unmatched: BulkUnmappedRow[]
 }
 
+export type StockBulkUpdateSummary = ImageBulkUploadSummary
+
+export type PricingBulkUpdateSummary = ImageBulkUploadSummary
+
 export type BulkUploadResponse = {
   ok: boolean
-  mode?: "products" | "images"
-  summary?: ProductBulkUploadSummary | ImageBulkUploadSummary
+  mode?: "products" | "images" | "stock" | "pricing"
+  summary?:
+    | ProductBulkUploadSummary
+    | ImageBulkUploadSummary
+    | StockBulkUpdateSummary
+    | PricingBulkUpdateSummary
   message?: string
 }
 
 export type CreateSupplierPartPayload = {
   partUid?: string
   completePartUid?: string
-  brand: string
-  mpn: string
-  oemNumber: string
+  vendorSku: string
+  brand?: string
+  partNumber?: string
+  competitorPartNumber?: string
+  competitorBrandName?: string
   price: number
   stock: number
   currency?: "AED"
+  rawUploadData?: unknown
   product?: {
     partName: string
     category: string

@@ -27,7 +27,7 @@ export function mapSupplierPartToProduct(part: SupplierPartApiRecord): Product {
     id: part.id,
     vendorSku: part.vendorSku,
     partNumber,
-    productName: part.part?.partName ?? part.originalPartName,
+    productName: part.originalPartName ?? part.part?.partName ?? "Unnamed product",
     brand: part.part?.brandName ?? part.originalBrand ?? "Unbranded",
     oemNumber:
       part.part?.partNumber ?? part.originalOemNumber ?? "Not provided",
@@ -38,7 +38,7 @@ export function mapSupplierPartToProduct(part: SupplierPartApiRecord): Product {
     mapping: part.mappingStatus === "mapped" ? "Mapped" : "Unmapped",
     mappingStatus,
     vehicles: part.mappingStatus === "mapped" ? "Mapped" : "Pending",
-    category: part.part?.category ?? part.category ?? "Not provided",
+    category: part.category ?? part.part?.category ?? "Not provided",
     oemSupersessionNumbers: part.oemSupersessionNumbers ?? [],
     competitorPartNumber: part.competitorPartNumber ?? null,
     competitorBrandName: part.competitorBrandName ?? null,
@@ -54,6 +54,7 @@ export function mapSupplierPartToProduct(part: SupplierPartApiRecord): Product {
     heading: part.part?.heading ?? null,
     description: part.part?.description ?? null,
     keyFeatures: part.part?.keyFeatures ?? [],
+    rawUploadData: part.rawUploadData,
   }
 }
 

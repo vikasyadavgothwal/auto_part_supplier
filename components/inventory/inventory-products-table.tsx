@@ -41,6 +41,7 @@ import { mapSupplierPartToProduct } from "./mappers"
 import type {
   Product,
   SupplierPartUpdateResponse,
+  UpdateSupplierPartPayload,
 } from "./types"
 
 type InventoryProductsTableProps = {
@@ -76,6 +77,27 @@ const tableHeaders = [
   },
 ] as const
 
+const normalizeRawUploadKey = (value: string) =>
+  value.trim().toLowerCase().replace(/[^a-z0-9]+/g, "")
+
+const readRawUploadValue = (data: unknown, aliases: string[]) => {
+  if (!data || typeof data !== "object" || Array.isArray(data)) {
+    return ""
+  }
+
+  const normalizedAliases = new Set(aliases.map(normalizeRawUploadKey))
+  for (const [key, value] of Object.entries(data)) {
+    if (normalizedAliases.has(normalizeRawUploadKey(key))) {
+      return String(value ?? "").trim()
+    }
+  }
+
+  return ""
+}
+
+const blankIfPlaceholder = (value: string | null | undefined) =>
+  !value || value === "Not provided" ? "" : value
+
 export function InventoryProductsTable({
   products,
   onProductUpdated,
@@ -92,8 +114,65 @@ export function InventoryProductsTable({
     }
 
     const formData = new FormData(event.currentTarget)
-    const price = Number(formData.get("price"))
+    const basePrice = String(formData.get("basePrice") ?? "").trim()
+    const discountPrice = String(formData.get("discountPrice") ?? "").trim()
+    const price = Number(discountPrice || basePrice || editingProduct.priceValue)
     const stock = Number(formData.get("stock"))
+    const vendorSku = String(formData.get("vendorSku") ?? "").trim()
+    const productName = String(formData.get("productName") ?? "").trim()
+    const shortDescription = String(formData.get("shortDescription") ?? "").trim()
+    const longDescription = String(formData.get("longDescription") ?? "").trim()
+    const mpn = String(formData.get("mpn") ?? "").trim()
+    const status = String(formData.get("status") ?? "").trim()
+    const grade = String(formData.get("grade") ?? "").trim()
+    const condition = String(formData.get("condition") ?? "").trim()
+    const currency = String(formData.get("currency") ?? "AED").trim() || "AED"
+    const taxClass = String(formData.get("taxClass") ?? "").trim()
+    const vat = String(formData.get("vat") ?? "").trim()
+    const maxRetailPrice = String(formData.get("maxRetailPrice") ?? "").trim()
+    const wholesaleDistributorPrice = String(
+      formData.get("wholesaleDistributorPrice") ?? "",
+    ).trim()
+    const fleetPrice = String(formData.get("fleetPrice") ?? "").trim()
+    const updatePayload: UpdateSupplierPartPayload = {
+      vendorSku,
+      productName,
+      shortDescription,
+      longDescription,
+      mpn,
+      status,
+      grade,
+      condition,
+      basePrice,
+      discountPrice,
+      currency,
+      taxClass,
+      vat,
+      maxRetailPrice,
+      wholesaleDistributorPrice,
+      fleetPrice,
+      price,
+      stock,
+      rawUploadData: {
+        SKU: vendorSku,
+        "Product Name": productName,
+        "Short Description": shortDescription,
+        "Long Description": longDescription,
+        "Manufacturer Part Number (MPN)": mpn,
+        Status: status,
+        Grade: grade,
+        Condition: condition,
+        "Base Price (AED)": basePrice,
+        "Discount Price (AED)": discountPrice,
+        Currency: currency,
+        "Tax Class": taxClass,
+        VAT: vat,
+        "Max Retail Price": maxRetailPrice,
+        "Wholesale/Distributor Pricing": wholesaleDistributorPrice,
+        "Fleet Pricing": fleetPrice,
+        Stock: stock,
+      },
+    }
     setIsUpdating(true)
     setUpdateError(null)
 
@@ -103,15 +182,15 @@ export function InventoryProductsTable({
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ price, stock }),
+          body: JSON.stringify(updatePayload),
         },
       )
-      const payload = (await response.json()) as SupplierPartUpdateResponse
-      if (!response.ok || !payload.ok || !payload.part) {
-        throw new Error(payload.message ?? "Unable to update price and stock")
+      const responsePayload = (await response.json()) as SupplierPartUpdateResponse
+      if (!response.ok || !responsePayload.ok || !responsePayload.part) {
+        throw new Error(responsePayload.message ?? "Unable to update product info")
       }
 
-      onProductUpdated(mapSupplierPartToProduct(payload.part))
+      onProductUpdated(mapSupplierPartToProduct(responsePayload.part))
       setEditingProduct(null)
     } catch (error) {
       setUpdateError(
@@ -214,7 +293,7 @@ export function InventoryProductsTable({
                         }}
                       >
                         <Pencil />
-                        Update price & stock
+                        Update product info
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -321,11 +400,12 @@ export function InventoryProductsTable({
           }
         }}
       >
-        <DialogContent className="rounded-sm bg-brand-panel sm:max-w-md">
+        <DialogContent className="max-h-[90vh] overflow-y-auto rounded-sm bg-brand-panel sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Update price and stock</DialogTitle>
+            <DialogTitle>Update product info</DialogTitle>
             <DialogDescription>
-              {editingProduct?.productName}. Currency is fixed to AED.
+              Update this supplier SKU using the same fields as the product info sheet.
+              Currency is fixed to AED.
             </DialogDescription>
           </DialogHeader>
 
@@ -339,15 +419,129 @@ export function InventoryProductsTable({
             <form className="space-y-5" onSubmit={handleUpdate}>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="update-price">Price</Label>
+                  <Label htmlFor="update-sku">SKU</Label>
                   <Input
-                    id="update-price"
-                    name="price"
+                    id="update-sku"
+                    name="vendorSku"
+                    defaultValue={editingProduct.vendorSku ?? ""}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="update-mpn">Manufacturer Part Number (MPN)</Label>
+                  <Input
+                    id="update-mpn"
+                    name="mpn"
+                    defaultValue={
+                      readRawUploadValue(editingProduct.rawUploadData, [
+                        "Manufacturer Part Number (MPN)",
+                        "Manufacturer Part Number",
+                        "MPN",
+                      ]) || blankIfPlaceholder(editingProduct.partNumber)
+                    }
+                    required
+                  />
+                </div>
+                <div className="space-y-2 sm:col-span-2">
+                  <Label htmlFor="update-product-name">Product Name</Label>
+                  <Input
+                    id="update-product-name"
+                    name="productName"
+                    defaultValue={editingProduct.productName}
+                    required
+                  />
+                </div>
+                <div className="space-y-2 sm:col-span-2">
+                  <Label htmlFor="update-short-description">Short Description</Label>
+                  <Input
+                    id="update-short-description"
+                    name="shortDescription"
+                    defaultValue={readRawUploadValue(editingProduct.rawUploadData, [
+                      "Short Description",
+                      "Product Short Description",
+                    ])}
+                  />
+                </div>
+                <div className="space-y-2 sm:col-span-2">
+                  <Label htmlFor="update-long-description">Long Description</Label>
+                  <textarea
+                    id="update-long-description"
+                    name="longDescription"
+                    className="min-h-24 w-full rounded-sm border border-input bg-transparent px-3 py-2 text-sm outline-none focus:border-ring focus:ring-3 focus:ring-ring/50"
+                    defaultValue={
+                      readRawUploadValue(editingProduct.rawUploadData, [
+                        "Long Description",
+                        "Product Long Description",
+                        "Description",
+                      ]) || blankIfPlaceholder(editingProduct.description)
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="update-status">Status</Label>
+                  <Input
+                    id="update-status"
+                    name="status"
+                    defaultValue={readRawUploadValue(editingProduct.rawUploadData, [
+                      "Status",
+                    ])}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="update-grade">Grade</Label>
+                  <Input
+                    id="update-grade"
+                    name="grade"
+                    defaultValue={
+                      readRawUploadValue(editingProduct.rawUploadData, ["Grade"]) ||
+                      blankIfPlaceholder(editingProduct.category)
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="update-condition">Condition</Label>
+                  <Input
+                    id="update-condition"
+                    name="condition"
+                    defaultValue={readRawUploadValue(editingProduct.rawUploadData, [
+                      "Condition",
+                    ])}
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="update-base-price">Base Price (AED)</Label>
+                  <Input
+                    id="update-base-price"
+                    name="basePrice"
                     type="number"
                     min="0"
                     step="0.01"
-                    defaultValue={editingProduct.priceValue}
+                    defaultValue={
+                      readRawUploadValue(editingProduct.rawUploadData, [
+                        "Base Price (AED)",
+                        "Base Price",
+                        "Price",
+                      ]) || editingProduct.priceValue
+                    }
                     required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="update-discount-price">Discount Price (AED)</Label>
+                  <Input
+                    id="update-discount-price"
+                    name="discountPrice"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    defaultValue={readRawUploadValue(editingProduct.rawUploadData, [
+                      "Discount Price (AED)",
+                      "Discount Price",
+                      "Sale Price",
+                    ])}
                   />
                 </div>
                 <div className="space-y-2">
@@ -362,11 +556,83 @@ export function InventoryProductsTable({
                     required
                   />
                 </div>
-                <div className="space-y-2 sm:col-span-2">
-                  <Label>Currency</Label>
-                  <div className="flex h-10 items-center rounded-sm border border-input bg-brand-surface px-3 text-sm font-semibold">
-                    AED
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="update-currency">Currency</Label>
+                  <Input
+                    id="update-currency"
+                    name="currency"
+                    defaultValue={
+                      readRawUploadValue(editingProduct.rawUploadData, [
+                        "Currency",
+                      ]) || "AED"
+                    }
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="update-tax-class">Tax Class</Label>
+                  <Input
+                    id="update-tax-class"
+                    name="taxClass"
+                    defaultValue={readRawUploadValue(editingProduct.rawUploadData, [
+                      "Tax Class",
+                    ])}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="update-vat">VAT</Label>
+                  <Input
+                    id="update-vat"
+                    name="vat"
+                    defaultValue={readRawUploadValue(editingProduct.rawUploadData, [
+                      "VAT",
+                    ])}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="update-max-retail-price">Max Retail Price</Label>
+                  <Input
+                    id="update-max-retail-price"
+                    name="maxRetailPrice"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    defaultValue={readRawUploadValue(editingProduct.rawUploadData, [
+                      "Max Retail Price",
+                      "MRP",
+                      "Maximum Retail Price",
+                    ])}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="update-wholesale-price">Wholesale/Distributor Pricing</Label>
+                  <Input
+                    id="update-wholesale-price"
+                    name="wholesaleDistributorPrice"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    defaultValue={readRawUploadValue(editingProduct.rawUploadData, [
+                      "Wholesale/Distributor Pricing",
+                      "Wholesale Distributor Pricing",
+                      "Wholesale Pricing",
+                      "Distributor Pricing",
+                    ])}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="update-fleet-price">Fleet Pricing</Label>
+                  <Input
+                    id="update-fleet-price"
+                    name="fleetPrice"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    defaultValue={readRawUploadValue(editingProduct.rawUploadData, [
+                      "Fleet Pricing",
+                      "Fleet Price",
+                    ])}
+                  />
                 </div>
               </div>
               <DialogFooter>
@@ -379,7 +645,7 @@ export function InventoryProductsTable({
                   Cancel
                 </Button>
                 <Button type="submit" disabled={isUpdating}>
-                  {isUpdating ? "Updating..." : "Update inventory"}
+                  {isUpdating ? "Updating..." : "Update product info"}
                 </Button>
               </DialogFooter>
             </form>

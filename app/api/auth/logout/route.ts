@@ -4,6 +4,8 @@ import {
   applySetCookieHeaders,
   getSetCookieHeaders,
   requestBackend,
+  SUPPLIER_ACCESS_COOKIE,
+  SUPPLIER_REFRESH_COOKIE,
 } from "@/lib/auth/backend"
 
 export const dynamic = "force-dynamic"
@@ -36,12 +38,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     maxAge: 0,
   }
   response.cookies.set(
-    process.env.USER_ACCESS_COOKIE_NAME ?? "user_access_token",
+    SUPPLIER_ACCESS_COOKIE,
     "",
     cookieOptions,
   )
   response.cookies.set(
-    process.env.USER_REFRESH_COOKIE_NAME ?? "user_refresh_token",
+    SUPPLIER_REFRESH_COOKIE,
     "",
     cookieOptions,
   )

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, type FormEvent } from "react"
-import { Plus, TriangleAlert, Upload } from "lucide-react"
+import { Plus, Search, TriangleAlert, Upload } from "lucide-react"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
@@ -29,13 +29,16 @@ import { BulkImportDialog } from "./bulk-import-dialog"
 import { InventoryProductsTable } from "./inventory-products-table"
 import { buildInventoryStats, mapSupplierPartToProduct } from "./mappers"
 import type {
+  InventoryPagination,
   Product,
   SupplierPartCreateResponse,
   SupplierPartLookupResult,
+  SupplierPartsListResponse,
 } from "./types"
 
 type InventoryPageContentProps = {
   initialProducts: Product[]
+  initialPagination: InventoryPagination
   loadError?: string | null
 }
 
@@ -53,9 +56,14 @@ function getFormValue(formData: FormData, key: string) {
 
 export function InventoryPageContent({
   initialProducts,
+  initialPagination,
   loadError = null,
 }: InventoryPageContentProps) {
   const [products, setProducts] = useState<Product[]>(initialProducts)
+  const [pagination, setPagination] = useState(initialPagination)
+  const [searchQuery, setSearchQuery] = useState("")
+  const [isLoadingProducts, setIsLoadingProducts] = useState(false)
+  const [productsError, setProductsError] = useState("")
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isBulkDialogOpen, setIsBulkDialogOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -63,9 +71,11 @@ export function InventoryPageContent({
   const [lookupResult, setLookupResult] =
     useState<SupplierPartLookupResult | null>(null)
   const [lookupIdentity, setLookupIdentity] = useState({
+    vendorSku: "",
     brand: "",
-    mpn: "",
-    oemNumber: "",
+    partNumber: "",
+    competitorPartNumber: "",
+    competitorBrandName: "",
   })
   const [dialogError, setDialogError] = useState<string | null>(null)
   const [feedback, setFeedback] = useState<Feedback | null>(
@@ -83,26 +93,71 @@ export function InventoryPageContent({
     (product) => product.stock > 0 && product.stock <= 12,
   ).length
 
+  async function loadProducts(page: number, query = searchQuery) {
+    setIsLoadingProducts(true)
+    setProductsError("")
+    try {
+      const params = new URLSearchParams({
+        page: String(page),
+        pageSize: "10",
+        q: query.trim(),
+      })
+      const response = await authenticatedFetch(`/api/supplier/parts?${params}`)
+      const payload = (await response.json()) as SupplierPartsListResponse
+      if (!response.ok || !payload.ok || !payload.parts || !payload.pagination) {
+        throw new Error(payload.message ?? "Unable to load inventory")
+      }
+      setProducts(payload.parts.map(mapSupplierPartToProduct))
+      setPagination(payload.pagination)
+    } catch (error) {
+      setProductsError(
+        error instanceof Error ? error.message : "Unable to load inventory",
+      )
+    } finally {
+      setIsLoadingProducts(false)
+    }
+  }
+
   function resetAddProductFlow() {
     setLookupResult(null)
-    setLookupIdentity({ brand: "", mpn: "", oemNumber: "" })
+    setLookupIdentity({
+      vendorSku: "",
+      brand: "",
+      partNumber: "",
+      competitorPartNumber: "",
+      competitorBrandName: "",
+    })
     setDialogError(null)
   }
 
   async function handleLookup(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const formData = new FormData(event.currentTarget)
+    const vendorSku = getFormValue(formData, "vendorSku")
     const brand = getFormValue(formData, "brand")
-    const mpn = getFormValue(formData, "mpn")
-    const oemNumber = getFormValue(formData, "oemNumber")
+    const partNumber = getFormValue(formData, "partNumber")
+    const competitorPartNumber = getFormValue(formData, "competitorPartNumber")
+    const competitorBrandName = getFormValue(formData, "competitorBrandName")
     setIsLookingUp(true)
     setDialogError(null)
 
     try {
+      if (!partNumber && (!brand || !competitorPartNumber)) {
+        throw new Error(
+          "Enter MPN / OEM number, or enter Brand Name and Competitor OEM Part Number.",
+        )
+      }
+
       const response = await authenticatedFetch("/api/supplier/parts/lookup", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ brand, mpn, oemNumber }),
+        body: JSON.stringify({
+          vendorSku,
+          brand,
+          partNumber,
+          competitorPartNumber,
+          competitorBrandName,
+        }),
       })
       const payload = (await response.json()) as {
         ok: boolean
@@ -112,7 +167,13 @@ export function InventoryPageContent({
       if (!response.ok || !payload.ok || !payload.result) {
         throw new Error(payload.message ?? "Unable to check the product")
       }
-      setLookupIdentity({ brand, mpn, oemNumber })
+      setLookupIdentity({
+        vendorSku,
+        brand,
+        partNumber,
+        competitorPartNumber,
+        competitorBrandName,
+      })
       setLookupResult(payload.result)
     } catch (error) {
       setDialogError(
@@ -214,13 +275,7 @@ export function InventoryPageContent({
         throw new Error(payload.message ?? "Unable to add supplier part")
       }
 
-      const product = mapSupplierPartToProduct(payload.part)
-      setProducts((currentProducts) => [
-        product,
-        ...currentProducts.filter(
-          (currentProduct) => currentProduct.id !== product.id,
-        ),
-      ])
+      await loadProducts(1)
       form.reset()
       setIsDialogOpen(false)
       resetAddProductFlow()
@@ -315,6 +370,43 @@ export function InventoryPageContent({
           </AlertDescription>
         </Alert>
 
+        <form
+          className="flex max-w-2xl gap-2"
+          onSubmit={(event) => {
+            event.preventDefault()
+            void loadProducts(1)
+          }}
+        >
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-brand-muted" />
+            <Input
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Search SKU, product, MPN, OEM, or brand..."
+              className="pl-9"
+            />
+          </div>
+          <Button type="submit" disabled={isLoadingProducts}>Search</Button>
+          {searchQuery ? (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setSearchQuery("")
+                void loadProducts(1, "")
+              }}
+            >
+              Clear
+            </Button>
+          ) : null}
+        </form>
+
+        {productsError ? (
+          <p className="rounded-sm border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive">
+            {productsError}
+          </p>
+        ) : null}
+
         <InventoryProductsTable
           products={products}
           onProductUpdated={(updatedProduct) =>
@@ -326,12 +418,39 @@ export function InventoryPageContent({
           }
         />
 
+        <div className="flex flex-col gap-3 text-sm text-brand-muted sm:flex-row sm:items-center sm:justify-between">
+          <p>
+            Showing {products.length ? (pagination.page - 1) * pagination.pageSize + 1 : 0}-
+            {Math.min(pagination.page * pagination.pageSize, pagination.total)} of {pagination.total} products
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={isLoadingProducts || pagination.page <= 1}
+              onClick={() => void loadProducts(pagination.page - 1)}
+            >
+              Previous
+            </Button>
+            <span>Page {pagination.page} of {pagination.totalPages}</span>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={isLoadingProducts || pagination.page >= pagination.totalPages}
+              onClick={() => void loadProducts(pagination.page + 1)}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+
         <Card className="surface-card rounded-sm shadow-none">
           <CardHeader className="pb-3">
             <CardTitle className="text-foreground">Product Mapping</CardTitle>
             <CardDescription className="text-brand-muted">
-              Submitted parts are checked against the local master index first,
-              then 17VIN when no local match exists.
+              Submitted parts are checked automatically. Mapped products become
+              available in your inventory; unmatched products are returned for
+              correction.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -357,8 +476,8 @@ export function InventoryPageContent({
               Add Supplier Part
             </DialogTitle>
             <DialogDescription className="text-brand-muted">
-              First identify the part by brand, MPN, and OEM. Existing products
-              only need AED price and stock.
+              Enter your Vendor SKU and MPN / OEM number. If you do not have
+              your own OEM, enter your brand and a competitor OEM instead.
             </DialogDescription>
           </DialogHeader>
 
@@ -371,20 +490,39 @@ export function InventoryPageContent({
           {!lookupResult ? (
             <form className="space-y-5" onSubmit={handleLookup}>
               <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="lookup-sku">Vendor SKU</Label>
+                  <Input id="lookup-sku" name="vendorSku" placeholder="BRK-001-BOSCH" required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lookup-part-number">MPN / OEM number</Label>
+                  <Input id="lookup-part-number" name="partNumber" placeholder="90915-YZZD2" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lookup-brand">Brand Name</Label>
+                  <Input id="lookup-brand" name="brand" placeholder="CEAT" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lookup-competitor-oem">Competitor OEM Part Number</Label>
+                  <Input
+                    id="lookup-competitor-oem"
+                    name="competitorPartNumber"
+                    placeholder="MRF-ZVTS-001"
+                  />
+                </div>
                 <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="lookup-brand">Brand</Label>
-                  <Input id="lookup-brand" name="brand" placeholder="Toyota" required />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="lookup-mpn">MPN</Label>
-                  <Input id="lookup-mpn" name="mpn" placeholder="90915-YZZD2" required />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="lookup-oem">OEM number</Label>
-                  <Input id="lookup-oem" name="oemNumber" placeholder="90915-YZZD2" required />
+                  <Label htmlFor="lookup-competitor-brand">Competitor Brand Name</Label>
+                  <Input
+                    id="lookup-competitor-brand"
+                    name="competitorBrandName"
+                    placeholder="MRF"
+                  />
+                  <p className="text-xs text-brand-muted">
+                    Use competitor OEM only when your own OEM field is blank.
+                  </p>
                 </div>
               </div>
-              <DialogFooter className="mx-0 mb-0 rounded-sm border-border bg-brand-surface px-0 pb-0">
+              <DialogFooter className="mx-0 mb-0 rounded-sm border-border bg-transparent px-0 pb-0">
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                   Cancel
                 </Button>
@@ -405,7 +543,10 @@ export function InventoryPageContent({
                     "New product details required"}
                 </p>
                 <p className="mt-1 text-sm text-brand-muted">
-                  {lookupIdentity.brand} · MPN {lookupIdentity.mpn} · OEM {lookupIdentity.oemNumber}
+                  SKU {lookupIdentity.vendorSku} ·{" "}
+                  {lookupIdentity.partNumber
+                    ? `MPN / OEM ${lookupIdentity.partNumber}`
+                    : `Brand ${lookupIdentity.brand} · Competitor OEM ${lookupIdentity.competitorPartNumber}`}
                 </p>
               </div>
 
@@ -521,7 +662,7 @@ export function InventoryPageContent({
                 </div>
               </div>
 
-              <DialogFooter className="mx-0 mb-0 rounded-sm border-border bg-brand-surface px-0 pb-0">
+              <DialogFooter className="mx-0 mb-0 rounded-sm border-border bg-transparent px-0 pb-0">
                 <Button type="button" variant="outline" disabled={isSubmitting} onClick={resetAddProductFlow}>
                   Back
                 </Button>
@@ -541,18 +682,8 @@ export function InventoryPageContent({
       <BulkImportDialog
         open={isBulkDialogOpen}
         onOpenChange={setIsBulkDialogOpen}
-        onProductsImported={(importedProducts) => {
-          setProducts((currentProducts) => {
-            const importedById = new Map(
-              importedProducts.map((product) => [product.id, product]),
-            )
-            return [
-              ...importedProducts,
-              ...currentProducts.filter(
-                (product) => !importedById.has(product.id),
-              ),
-            ]
-          })
+        onProductsImported={() => {
+          void loadProducts(1)
         }}
       />
     </div>

@@ -3,6 +3,7 @@ import type {
   SupplierPartCreateResponse,
   SupplierPartsListResponse,
 } from "@/components/inventory/types"
+import { toBackendCookieHeader } from "@/lib/auth/backend"
 
 const DEFAULT_ADMIN_API_BASE_URL = "http://localhost:3000"
 
@@ -28,14 +29,14 @@ function buildForwardHeaders(cookieHeader?: string | null, hasJsonBody = false) 
   }
 
   if (cookieHeader) {
-    headers.set("cookie", cookieHeader)
+    headers.set("cookie", toBackendCookieHeader(cookieHeader))
   }
 
   return headers
 }
 
 export async function getSupplierPartsFromBackend(cookieHeader?: string | null) {
-  const response = await fetch(buildAdminUrl("/api/supplier/parts"), {
+  const response = await fetch(buildAdminUrl("/api/supplier/parts", "?page=1&pageSize=10"), {
     cache: "no-store",
     headers: buildForwardHeaders(cookieHeader),
   })
@@ -45,7 +46,10 @@ export async function getSupplierPartsFromBackend(cookieHeader?: string | null) 
     throw new Error(payload.message ?? "Unable to load supplier parts")
   }
 
-  return payload.parts ?? []
+  return {
+    parts: payload.parts ?? [],
+    pagination: payload.pagination ?? { page: 1, pageSize: 10, total: 0, totalPages: 1 },
+  }
 }
 
 export async function createSupplierPartInBackend(
