@@ -62,11 +62,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const result = await refresh(request)
-  const destination = new URL(
-    result.ok ? appRoutes.dashboard : appRoutes.login,
-    request.url,
-  )
-  const response = NextResponse.redirect(destination)
+  const response = new NextResponse(null, {
+    status: 307,
+    headers: {
+      Location: result.ok ? appRoutes.dashboard : appRoutes.login,
+    },
+  })
   for (const value of getSetCookieHeaders(result.response.headers)) {
     response.headers.append("set-cookie", value)
   }

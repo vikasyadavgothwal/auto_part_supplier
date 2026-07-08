@@ -23,15 +23,15 @@ pnpm start
 
 This project is pnpm-only. `npm`, `yarn`, and `bun` are blocked by lifecycle guards in `package.json`.
 
-Open [http://localhost:3004](http://localhost:3004) with your browser to see the result.
+Open [http://localhost:3004](http://localhost:3004) with your browser during
+local development.
 
-In production, `pnpm start` listens on port `3000` by default and binds to
-`0.0.0.0`, so the server can be reached at your public host, for example
-`http://13.62.243.148:3000/orders`. To use another port, set `PORT` before
-starting the process:
+In production, `pnpm start` listens on port `3004`. If Next.js prints a network
+URL like `http://0.0.0.0:3004`, that is only the bind address. Open the app with
+your server's public IP instead:
 
-```bash
-PORT=4000 pnpm start
+```text
+http://13.62.243.148:3004/orders
 ```
 
 ## Authentication configuration
