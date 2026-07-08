@@ -43,7 +43,7 @@ browser storage.
 Configure these values for the dashboard runtime:
 
 ```bash
-ADMIN_API_BASE_URL=http://localhost:3000
+ADMIN_API_BASE_URL=http://13.62.243.148:3000
 NEXT_PUBLIC_FIREBASE_API_KEY=
 NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
 NEXT_PUBLIC_FIREBASE_PROJECT_ID=
@@ -55,6 +55,10 @@ NEXT_PUBLIC_FIREBASE_APP_ID=
 Use the same Firebase web application values as `auto-parts-pro-user`. If the
 Firebase values are omitted, login falls back to backend-managed email and
 password accounts.
+
+`ADMIN_API_BASE_URL` must point to the backend API server, not the supplier
+dashboard domain. For example, do not set it to
+`http://supplier.websitedesignersdubai.ae`.
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 

@@ -5,7 +5,7 @@ import type {
 } from "@/components/inventory/types"
 import { toBackendCookieHeader } from "@/lib/auth/backend"
 
-const DEFAULT_ADMIN_API_BASE_URL = "http://www.websitedesignersdubai.ae"
+const DEFAULT_ADMIN_API_BASE_URL = "http://13.62.243.148:3000"
 
 export function getAdminApiBaseUrl() {
   return (
