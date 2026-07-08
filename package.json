@@ -6,9 +6,10 @@
   "scripts": {
     "preinstall": "node scripts/ensure-pnpm.js",
     "dev": "node scripts/ensure-pnpm.js && next dev --port 3004",
-    "build": "node scripts/ensure-pnpm.js && next build",
-    "start": "node scripts/ensure-pnpm.js && next start --hostname 0.0.0.0",
-    "lint": "node scripts/ensure-pnpm.js && eslint"
+    "build": "next build",
+    "start": "next start --port 3004",
+    "lint": "eslint",
+    "test": "vitest run"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",
