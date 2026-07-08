@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server"
-const DEFAULT_BACKEND_URL =
-  process.env.NODE_ENV === "production"
-    ? "http://13.62.243.148:3000"
-    : "http://localhost:3000";
+
+const BACKEND_BASE_URL_ENV_NAMES = [
+  "ADMIN_API_BASE_URL",
+  "BACKEND_URL",
+  "NEXT_PUBLIC_ADMIN_API_BASE_URL",
+] as const
+
 const BACKEND_ACCESS_COOKIE = process.env.USER_ACCESS_COOKIE_NAME ?? "user_access_token"
 const BACKEND_REFRESH_COOKIE = process.env.USER_REFRESH_COOKIE_NAME ?? "user_refresh_token"
 export const SUPPLIER_ACCESS_COOKIE = "supplier_access_token"
@@ -45,12 +48,20 @@ const toDashboardSetCookie = (value: string) => {
 }
 
 export function getBackendUrl(path: string): URL {
-  const baseUrl =
-    process.env.ADMIN_API_BASE_URL?.trim() ||
-    process.env.BACKEND_URL?.trim() ||
-    process.env.NEXT_PUBLIC_ADMIN_API_BASE_URL?.trim() ||
-    DEFAULT_BACKEND_URL
-  return new URL(path, baseUrl)
+  return new URL(path, getBackendBaseUrl())
+}
+
+export function getBackendBaseUrl(): string {
+  for (const name of BACKEND_BASE_URL_ENV_NAMES) {
+    const value = process.env[name]?.trim()
+    if (value) {
+      return value
+    }
+  }
+
+  throw new Error(
+    `Missing backend API URL. Set one of: ${BACKEND_BASE_URL_ENV_NAMES.join(", ")}.`,
+  )
 }
 
 export function getSetCookieHeaders(headers: Headers): string[] {

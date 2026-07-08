@@ -40,7 +40,8 @@ The dashboard exchanges a Firebase ID token for backend access and refresh
 tokens. The backend tokens remain in HttpOnly cookies and are never stored in
 browser storage.
 
-Configure these values for the dashboard runtime:
+Configure these values for the dashboard runtime. `ADMIN_API_BASE_URL` is
+required; the app does not fall back to a hardcoded localhost backend.
 
 ```bash
 ADMIN_API_BASE_URL=http://13.62.243.148:3000

@@ -3,16 +3,10 @@ import type {
   SupplierPartCreateResponse,
   SupplierPartsListResponse,
 } from "@/components/inventory/types"
-import { toBackendCookieHeader } from "@/lib/auth/backend"
-
-const DEFAULT_ADMIN_API_BASE_URL = "http://13.62.243.148:3000"
+import { getBackendBaseUrl, toBackendCookieHeader } from "@/lib/auth/backend"
 
 export function getAdminApiBaseUrl() {
-  return (
-    process.env.ADMIN_API_BASE_URL?.trim() ||
-    process.env.NEXT_PUBLIC_ADMIN_API_BASE_URL?.trim() ||
-    DEFAULT_ADMIN_API_BASE_URL
-  )
+  return getBackendBaseUrl()
 }
 
 function buildAdminUrl(path: string, search = "") {
