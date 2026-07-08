@@ -94,6 +94,14 @@ const imageTemplate = [
   ],
 ]
 
+const imageQualityGuidelines = [
+  "Use direct public JPG, PNG, or WebP image URLs. The URL must open the image itself, not a webpage.",
+  "Maximum file size is 5 MB per image. Recommended quality is 1200 × 1200 px or higher.",
+  "Use clear, sharp, well-lit product photos on a plain or white background.",
+  "Show the full part in frame. Avoid blurry images, screenshots, watermarks, borders, and supplier logos.",
+  "Use the best front/product view as Primary Image. Add up to 5 gallery images for other angles.",
+]
+
 const stockTemplate = [
   ["SKU", "Warehouse ID", "Quantity", "Lead Time", "Low Stock Threshold"],
   ["BRK-001-BOSCH", "DXB-WH-01", 50, "2 days", 10],
@@ -188,6 +196,24 @@ const getUpdateSummaryLabel = (mode: BulkUploadMode | null) => {
 
 const getProductInfoSummaryText = (summary: ProductBulkUploadSummary) =>
   `${summary.mappedCount} product info rows updated; ${summary.unmappedCount} failed.`
+
+function ImageQualityGuidelines() {
+  return (
+    <div className="mt-3 rounded-sm border border-primary/20 bg-primary/5 p-3">
+      <p className="text-xs font-semibold text-foreground">
+        Image quality requirements
+      </p>
+      <ul className="mt-2 space-y-1 text-xs text-brand-muted">
+        {imageQualityGuidelines.map((guideline) => (
+          <li key={guideline} className="flex gap-2">
+            <CircleCheck className="mt-0.5 size-3 shrink-0 text-primary" />
+            <span>{guideline}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
 
 export function BulkImportDialog({
   open,
@@ -415,6 +441,7 @@ export function BulkImportDialog({
                   Image URLs, separated by semicolons. Gallery Image 1 through 5
                   columns are also accepted.
                 </p>
+                <ImageQualityGuidelines />
                 <div className="mt-4 space-y-2">
                   <Label htmlFor="bulk-product-images">Image file</Label>
                   <Input
@@ -443,6 +470,7 @@ export function BulkImportDialog({
                   gallery URLs can use one semicolon-separated column or Gallery
                   Image 1 through 5 columns.
                 </p>
+                <ImageQualityGuidelines />
                 <div className="mt-4 space-y-2">
                   <Label htmlFor="bulk-image-file">Image file</Label>
                   <Input

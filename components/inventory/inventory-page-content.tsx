@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, type FormEvent } from "react"
-import { Plus, Search, TriangleAlert, Upload } from "lucide-react"
+import { CircleCheck, Plus, Search, TriangleAlert, Upload } from "lucide-react"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
@@ -50,8 +50,33 @@ type Feedback = {
 
 const defaultFeedback: Feedback | null = null
 
+const productImageGuidelines = [
+  "Upload JPG, PNG, or WebP only. Maximum 8 images, 5 MB each.",
+  "Recommended quality is 1200 × 1200 px or higher with a clear, sharp product view.",
+  "Use a plain or white background and keep the full part visible in the frame.",
+  "Avoid blurry images, screenshots, watermarks, borders, and supplier logos.",
+]
+
 function getFormValue(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim()
+}
+
+function ProductImageGuidelines() {
+  return (
+    <div className="rounded-sm border border-primary/20 bg-primary/5 p-3">
+      <p className="text-xs font-semibold text-foreground">
+        Image quality requirements
+      </p>
+      <ul className="mt-2 space-y-1 text-xs text-brand-muted">
+        {productImageGuidelines.map((guideline) => (
+          <li key={guideline} className="flex gap-2">
+            <CircleCheck className="mt-0.5 size-3 shrink-0 text-primary" />
+            <span>{guideline}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
 }
 
 export function InventoryPageContent({
@@ -623,8 +648,9 @@ export function InventoryPageContent({
                       required
                     />
                     <p className="text-xs text-brand-muted">
-                      At least one image is required. Maximum 8 images, 5 MB each.
+                      At least one clear product image is required.
                     </p>
+                    <ProductImageGuidelines />
                   </div>
                 </div>
               ) : null}
