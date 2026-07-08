@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 const DEFAULT_BACKEND_URL =
   process.env.NODE_ENV === "production"
-    ? "http://13.62.243.148:3000"
+    ? "http://www.websitedesignersdubai.ae"
     : "http://localhost:3000";
 const BACKEND_ACCESS_COOKIE = process.env.USER_ACCESS_COOKIE_NAME ?? "user_access_token"
 const BACKEND_REFRESH_COOKIE = process.env.USER_REFRESH_COOKIE_NAME ?? "user_refresh_token"
