@@ -2,19 +2,50 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
-First, run the development server:
+First, install dependencies:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Then run the development server:
+
+```bash
+pnpm dev
+```
+
+Build and start the production server with:
+
+```bash
+pnpm build
+pnpm start
+```
+
+This project is pnpm-only. `npm`, `yarn`, and `bun` are blocked by lifecycle guards in `package.json`.
+
+Open [http://localhost:3004](http://localhost:3004) with your browser to see the result.
+
+## Authentication configuration
+
+The dashboard exchanges a Firebase ID token for backend access and refresh
+tokens. The backend tokens remain in HttpOnly cookies and are never stored in
+browser storage.
+
+Configure these values for the dashboard runtime:
+
+```bash
+ADMIN_API_BASE_URL=http://localhost:3000
+NEXT_PUBLIC_FIREBASE_API_KEY=
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
+NEXT_PUBLIC_FIREBASE_APP_ID=
+```
+
+Use the same Firebase web application values as `auto-parts-pro-user`. If the
+Firebase values are omitted, login falls back to backend-managed email and
+password accounts.
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 

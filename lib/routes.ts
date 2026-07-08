@@ -19,6 +19,7 @@ export const appRoutes = {
   offers: "/offers",
   performance: "/performance",
   settings: "/settings",
+  login: "/login",
 } as const
 
 export function stripBasePath(pathname: string | null) {
