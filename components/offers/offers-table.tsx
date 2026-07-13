@@ -13,6 +13,8 @@ import type { Offer } from "./types"
 
 type OffersTableProps = {
   offers: readonly Offer[]
+  loading?: boolean
+  onSelectOffer: (offer: Offer) => void
 }
 
 const tableHeaders = [
@@ -30,7 +32,11 @@ const tableHeaders = [
   },
 ] as const
 
-export function OffersTable({ offers }: OffersTableProps) {
+export function OffersTable({
+  offers,
+  loading = false,
+  onSelectOffer,
+}: OffersTableProps) {
   return (
     <Card className="surface-card w-full min-w-0 overflow-hidden rounded-sm shadow-none py-0">
       <div className="w-full max-w-full overflow-x-auto">
@@ -49,6 +55,7 @@ export function OffersTable({ offers }: OffersTableProps) {
             {offers.map((offer) => (
               <TableRow
                 key={offer.id}
+                onClick={() => onSelectOffer(offer)}
                 className="cursor-pointer border-b border-border transition-colors hover:bg-brand-panel-strong"
               >
                 <TableCell className="px-6 py-4 text-sm text-brand-muted">
@@ -82,6 +89,16 @@ export function OffersTable({ offers }: OffersTableProps) {
                 </TableCell>
               </TableRow>
             ))}
+            {!offers.length ? (
+              <TableRow>
+                <TableCell
+                  colSpan={tableHeaders.length}
+                  className="px-6 py-10 text-center text-sm text-brand-muted"
+                >
+                  {loading ? "Loading offers..." : "No quote offers found."}
+                </TableCell>
+              </TableRow>
+            ) : null}
           </TableBody>
         </Table>
       </div>

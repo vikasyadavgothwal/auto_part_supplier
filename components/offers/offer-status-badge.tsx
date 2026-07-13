@@ -22,5 +22,11 @@ export function OfferStatusBadge({ status }: { status: OfferStatus }) {
           Rejected
         </Badge>
       )
+    case "Withdrawn":
+      return (
+        <Badge className="border-brand-muted/20 bg-brand-muted/10 text-brand-muted hover:bg-brand-muted/10">
+          Withdrawn
+        </Badge>
+      )
   }
 }

@@ -39,7 +39,12 @@ function getFirebaseAuth(): Auth {
 export async function createFirebaseLoginPayload(
   email: string,
   password: string,
-): Promise<{ firebaseIdToken: string; installationId: string }> {
+): Promise<{
+  firebaseIdToken: string
+  installationId: string
+  requestedRole: "Supplier"
+  requestedRoleUid: string
+}> {
   const credential = await signInWithEmailAndPassword(
     getFirebaseAuth(),
     email,
@@ -61,6 +66,8 @@ export async function createFirebaseLoginPayload(
   return {
     firebaseIdToken: await credential.user.getIdToken(true),
     installationId,
+    requestedRole: "Supplier",
+    requestedRoleUid: credential.user.uid,
   }
 }
 

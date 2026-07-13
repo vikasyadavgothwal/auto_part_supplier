@@ -10,8 +10,60 @@ import type { AuthApiPayload } from "@/lib/auth/types"
 
 export const dynamic = "force-dynamic"
 
+const getFirebaseUidFromToken = (token: string): string | null => {
+  try {
+    const [, payload] = token.split(".")
+    if (!payload) return null
+
+    const parsed = JSON.parse(
+      Buffer.from(payload, "base64url").toString("utf8"),
+    ) as { user_id?: unknown; sub?: unknown }
+    const uid =
+      typeof parsed.user_id === "string"
+        ? parsed.user_id
+        : typeof parsed.sub === "string"
+          ? parsed.sub
+          : ""
+
+    return uid.trim() || null
+  } catch {
+    return null
+  }
+}
+
+const withSupplierRoleRequest = (body: string): string => {
+  try {
+    const parsed = JSON.parse(body) as unknown
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return body
+    }
+
+    const payload = parsed as Record<string, unknown>
+    const firebaseIdToken =
+      typeof payload.firebaseIdToken === "string"
+        ? payload.firebaseIdToken
+        : ""
+    if (!firebaseIdToken) return body
+
+    const requestedRoleUid =
+      getFirebaseUidFromToken(firebaseIdToken) ||
+      (typeof payload.requestedRoleUid === "string"
+        ? payload.requestedRoleUid.trim()
+        : "")
+    if (!requestedRoleUid) return body
+
+    return JSON.stringify({
+      ...payload,
+      requestedRole: "Supplier",
+      requestedRoleUid,
+    })
+  } catch {
+    return body
+  }
+}
+
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  const body = await request.text()
+  const body = withSupplierRoleRequest(await request.text())
   const backendResponse = await requestBackend("/api/v1/user/auth/login", {
     method: "POST",
     body,
