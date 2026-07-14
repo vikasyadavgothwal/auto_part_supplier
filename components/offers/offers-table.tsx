@@ -23,6 +23,7 @@ const tableHeaders = [
   { label: "Buyer", className: "min-w-[150px] px-6 py-4 text-brand-muted" },
   { label: "Part", className: "min-w-[220px] px-6 py-4 text-brand-muted" },
   { label: "Qty", className: "min-w-[90px] px-6 py-4 text-brand-muted" },
+  { label: "Part Type", className: "min-w-[130px] px-6 py-4 text-brand-muted" },
   { label: "Price", className: "min-w-[110px] px-6 py-4 text-brand-muted" },
   { label: "ETA", className: "min-w-[110px] px-6 py-4 text-brand-muted" },
   { label: "Status", className: "min-w-[120px] px-6 py-4 text-brand-muted" },
@@ -72,6 +73,9 @@ export function OffersTable({
                 </TableCell>
                 <TableCell className="px-6 py-4 text-sm text-brand-muted">
                   {offer.qty}
+                </TableCell>
+                <TableCell className="px-6 py-4 text-sm text-brand-muted">
+                  {offer.partType}
                 </TableCell>
                 <TableCell className="px-6 py-4 text-sm text-brand-muted">
                   <span className="font-semibold text-foreground">

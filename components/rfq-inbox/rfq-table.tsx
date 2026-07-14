@@ -50,10 +50,13 @@ const tableHeaders = [
   { label: "Action", className: "min-w-[100px] px-6 py-4 text-brand-muted" },
 ] as const
 
+const partTypeOptions = ["New", "Used", "Refurbished", "Remanufactured", "Salvage"] as const
+
 export function RfqTable({ rfqs, onBidSubmitted }: RfqTableProps) {
   const [selected, setSelected] = React.useState<Rfq | null>(null)
   const [totalAmount, setTotalAmount] = React.useState("")
   const [deliveryDays, setDeliveryDays] = React.useState("")
+  const [partType, setPartType] = React.useState<(typeof partTypeOptions)[number]>("New")
   const [validUntil, setValidUntil] = React.useState("")
   const [notes, setNotes] = React.useState("")
   const [error, setError] = React.useState("")
@@ -63,6 +66,9 @@ export function RfqTable({ rfqs, onBidSubmitted }: RfqTableProps) {
     setSelected(rfq)
     setTotalAmount(rfq.myBid ? String(rfq.myBid.totalAmount) : "")
     setDeliveryDays(rfq.myBid ? String(rfq.myBid.deliveryDays) : "")
+    setPartType(
+      partTypeOptions.find((option) => option === rfq.myBid?.partType) ?? "New",
+    )
     setValidUntil(rfq.myBid?.validUntil?.slice(0, 10) ?? "")
     setNotes(rfq.myBid?.notes ?? "")
     setError("")
@@ -77,7 +83,13 @@ export function RfqTable({ rfqs, onBidSubmitted }: RfqTableProps) {
       const response = await authenticatedFetch(`/api/supplier/rfqs/${selected.id}/bids`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ totalAmount, deliveryDays, validUntil: validUntil || null, notes }),
+        body: JSON.stringify({
+          totalAmount,
+          deliveryDays,
+          partType,
+          validUntil: validUntil || null,
+          notes,
+        }),
       })
       const payload = await response.json() as { ok: boolean; bid?: RfqBid; message?: string }
       if (!response.ok || !payload.ok || !payload.bid) throw new Error(payload.message || "Unable to submit quote")
@@ -191,6 +203,24 @@ export function RfqTable({ rfqs, onBidSubmitted }: RfqTableProps) {
               <div className="space-y-2">
                 <Label htmlFor="delivery-days">Delivery days</Label>
                 <Input id="delivery-days" type="number" min="1" step="1" required value={deliveryDays} onChange={(event) => setDeliveryDays(event.target.value)} />
+              </div>
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="part-type">Part type</Label>
+                <select
+                  id="part-type"
+                  required
+                  value={partType}
+                  onChange={(event) =>
+                    setPartType(event.target.value as (typeof partTypeOptions)[number])
+                  }
+                  className="h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm"
+                >
+                  {partTypeOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className="space-y-2 sm:col-span-2">
                 <Label htmlFor="valid-until">Quote valid until (optional)</Label>

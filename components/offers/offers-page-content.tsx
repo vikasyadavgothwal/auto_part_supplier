@@ -90,6 +90,7 @@ const mapOffer = (record: SupplierOfferRecord): Offer => ({
   price: money(record.totalAmount),
   amount: record.totalAmount,
   eta: `${record.deliveryDays} day${record.deliveryDays === 1 ? "" : "s"}`,
+  partType: record.partType || "New",
   status: statusLabel[record.status],
   submitted: formatDate(record.submittedAt),
   validUntil: formatDate(record.validUntil),
@@ -365,6 +366,10 @@ export function OffersPageContent({
                 <p>
                   <span className="text-brand-muted">Delivery ETA:</span>{" "}
                   {selectedOffer.eta}
+                </p>
+                <p>
+                  <span className="text-brand-muted">Part type:</span>{" "}
+                  {selectedOffer.partType}
                 </p>
                 <p>
                   <span className="text-brand-muted">Valid until:</span>{" "}

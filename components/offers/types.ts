@@ -18,6 +18,7 @@ export type Offer = {
   price: string
   amount: number
   eta: string
+  partType: string
   status: OfferStatus
   submitted: string
   validUntil: string
@@ -67,6 +68,7 @@ export type SupplierOfferRecord = {
   parts: SupplierOfferPart[]
   totalAmount: number
   deliveryDays: number
+  partType: string
   validUntil: string | null
   notes: string | null
   status: SupplierOfferStatus
