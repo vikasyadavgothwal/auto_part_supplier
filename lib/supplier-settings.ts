@@ -6,7 +6,10 @@ export type SupplierProfileRecord = {
   firstName: string | null
   lastName: string | null
   email: string | null
+  emailVerifiedAt: string | null
   phone: string | null
+  mobileVerifiedAt: string | null
+  avatarUrl: string | null
   addressLine1: string | null
   addressLine2: string | null
   city: string | null
@@ -22,6 +25,7 @@ export type SupplierProfileFormValues = {
   companyName: string
   firstName: string
   lastName: string
+  email: string
   phone: string
   addressLine1: string
   addressLine2: string
@@ -39,7 +43,10 @@ export const emptySupplierProfile: SupplierProfileRecord = {
   firstName: null,
   lastName: null,
   email: null,
+  emailVerifiedAt: null,
   phone: null,
+  mobileVerifiedAt: null,
+  avatarUrl: null,
   addressLine1: null,
   addressLine2: null,
   city: null,
@@ -57,6 +64,7 @@ export const formFromSupplierProfile = (
   companyName: profile.companyName ?? "",
   firstName: profile.firstName ?? "",
   lastName: profile.lastName ?? "",
+  email: profile.email ?? "",
   phone: profile.phone ?? "",
   addressLine1: profile.addressLine1 ?? "",
   addressLine2: profile.addressLine2 ?? "",
@@ -70,6 +78,7 @@ export const payloadFromSupplierForm = (form: SupplierProfileFormValues) => ({
   companyName: form.companyName.trim(),
   firstName: form.firstName.trim(),
   lastName: form.lastName.trim(),
+  email: form.email.trim(),
   phone: form.phone.trim(),
   addressLine1: form.addressLine1.trim(),
   addressLine2: form.addressLine2.trim(),

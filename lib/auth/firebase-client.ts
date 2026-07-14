@@ -27,7 +27,7 @@ export function isFirebaseAuthConfigured(): boolean {
   return requiredConfig.every((value) => Boolean(value?.trim()))
 }
 
-function getFirebaseAuth(): Auth {
+export function getFirebaseAuth(): Auth {
   if (!isFirebaseAuthConfigured()) {
     throw new Error("Firebase authentication is not configured.")
   }
@@ -35,6 +35,15 @@ function getFirebaseAuth(): Auth {
   const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig)
   return getAuth(app)
 }
+
+export const getFirebaseAuthDiagnostics = () => ({
+  origin: typeof window === "undefined" ? "server" : window.location.origin,
+  authDomain: firebaseConfig.authDomain ?? "",
+  projectId: firebaseConfig.projectId ?? "",
+  apiKeyHint: firebaseConfig.apiKey
+    ? `${firebaseConfig.apiKey.slice(0, 6)}...${firebaseConfig.apiKey.slice(-4)}`
+    : "",
+})
 
 export async function createFirebaseLoginPayload(
   email: string,
