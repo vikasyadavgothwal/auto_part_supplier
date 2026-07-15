@@ -1,4 +1,4 @@
-const DEFAULT_BASE_PATH = "/user_dashboard"
+const DEFAULT_BASE_PATH = "/dashboard"
 
 function normalizeBasePath(value?: string) {
   if (!value) {
