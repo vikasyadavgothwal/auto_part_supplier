@@ -60,6 +60,15 @@ const MOBILE_COUNTRY_CODES = [
 ] as const
 const DEFAULT_MOBILE_COUNTRY_CODE = "+971"
 
+const isHttpUrl = (value: string) => {
+  try {
+    const url = new URL(value)
+    return url.protocol === "http:" || url.protocol === "https:"
+  } catch {
+    return false
+  }
+}
+
 const normalizeDigits = (value: string, maxLength = 14) =>
   value.replace(/\D/g, "").slice(0, maxLength)
 
@@ -239,6 +248,16 @@ export function SupplierSettingsManager({
     }
     if (form.postalCode && !POSTAL_CODE_PATTERN.test(form.postalCode)) {
       return "Postal code contains invalid characters"
+    }
+    if (!form.tradeLicenseNumber.trim()) return "Trade license number is required"
+    if (!form.contactPerson.trim()) return "Contact person is required"
+    if (!form.designation.trim()) return "Designation is required"
+    if (!isHttpUrl(form.tradeLicenseImageUrl.trim())) {
+      return "Enter a valid trade license image URL"
+    }
+    if (!form.vatTrnNumber.trim()) return "VAT TRN number is required"
+    if (!isHttpUrl(form.vatTrnImageUrl.trim())) {
+      return "Enter a valid VAT TRN image URL"
     }
     return ""
   }
@@ -582,6 +601,93 @@ export function SupplierSettingsManager({
                 className="border-border bg-brand-surface"
               />
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="rounded-sm border border-border bg-brand-panel shadow-none">
+        <CardHeader>
+          <CardTitle className="text-foreground">
+            Trade License & VAT Details
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-6 md:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="trade-license-number">Trade License Number</Label>
+            <Input
+              id="trade-license-number"
+              value={form.tradeLicenseNumber}
+              onChange={(event) =>
+                setField("tradeLicenseNumber", event.target.value)
+              }
+              className="border-border bg-brand-surface"
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="contact-person">Contact Person</Label>
+            <Input
+              id="contact-person"
+              value={form.contactPerson}
+              onChange={(event) => setField("contactPerson", event.target.value)}
+              className="border-border bg-brand-surface"
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="designation">Designation</Label>
+            <Input
+              id="designation"
+              value={form.designation}
+              onChange={(event) => setField("designation", event.target.value)}
+              className="border-border bg-brand-surface"
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="vat-trn-number">VAT TRN Number</Label>
+            <Input
+              id="vat-trn-number"
+              value={form.vatTrnNumber}
+              onChange={(event) => setField("vatTrnNumber", event.target.value)}
+              className="border-border bg-brand-surface"
+              required
+            />
+          </div>
+
+          <div className="space-y-2 md:col-span-2">
+            <Label htmlFor="trade-license-image-url">
+              Trade License Image URL
+            </Label>
+            <Input
+              id="trade-license-image-url"
+              type="url"
+              inputMode="url"
+              value={form.tradeLicenseImageUrl}
+              onChange={(event) =>
+                setField("tradeLicenseImageUrl", event.target.value)
+              }
+              placeholder="https://example.com/trade-license.jpg"
+              className="border-border bg-brand-surface"
+              required
+            />
+          </div>
+
+          <div className="space-y-2 md:col-span-2">
+            <Label htmlFor="vat-trn-image-url">VAT TRN Image URL</Label>
+            <Input
+              id="vat-trn-image-url"
+              type="url"
+              inputMode="url"
+              value={form.vatTrnImageUrl}
+              onChange={(event) => setField("vatTrnImageUrl", event.target.value)}
+              placeholder="https://example.com/vat-certificate.jpg"
+              className="border-border bg-brand-surface"
+              required
+            />
           </div>
         </CardContent>
       </Card>

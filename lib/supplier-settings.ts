@@ -8,6 +8,12 @@ export type SupplierProfileRecord = {
   email: string | null
   emailVerifiedAt: string | null
   phone: string | null
+  tradeLicenseNumber: string | null
+  contactPerson: string | null
+  designation: string | null
+  tradeLicenseImageUrl: string | null
+  vatTrnNumber: string | null
+  vatTrnImageUrl: string | null
   mobileVerifiedAt: string | null
   avatarUrl: string | null
   addressLine1: string | null
@@ -27,6 +33,12 @@ export type SupplierProfileFormValues = {
   lastName: string
   email: string
   phone: string
+  tradeLicenseNumber: string
+  contactPerson: string
+  designation: string
+  tradeLicenseImageUrl: string
+  vatTrnNumber: string
+  vatTrnImageUrl: string
   addressLine1: string
   addressLine2: string
   city: string
@@ -45,6 +57,12 @@ export const emptySupplierProfile: SupplierProfileRecord = {
   email: null,
   emailVerifiedAt: null,
   phone: null,
+  tradeLicenseNumber: null,
+  contactPerson: null,
+  designation: null,
+  tradeLicenseImageUrl: null,
+  vatTrnNumber: null,
+  vatTrnImageUrl: null,
   mobileVerifiedAt: null,
   avatarUrl: null,
   addressLine1: null,
@@ -66,6 +84,12 @@ export const formFromSupplierProfile = (
   lastName: profile.lastName ?? "",
   email: profile.email ?? "",
   phone: profile.phone ?? "",
+  tradeLicenseNumber: profile.tradeLicenseNumber ?? "",
+  contactPerson: profile.contactPerson ?? "",
+  designation: profile.designation ?? "",
+  tradeLicenseImageUrl: profile.tradeLicenseImageUrl ?? "",
+  vatTrnNumber: profile.vatTrnNumber ?? "",
+  vatTrnImageUrl: profile.vatTrnImageUrl ?? "",
   addressLine1: profile.addressLine1 ?? "",
   addressLine2: profile.addressLine2 ?? "",
   city: profile.city ?? "",
@@ -80,6 +104,12 @@ export const payloadFromSupplierForm = (form: SupplierProfileFormValues) => ({
   lastName: form.lastName.trim(),
   email: form.email.trim(),
   phone: form.phone.trim(),
+  tradeLicenseNumber: form.tradeLicenseNumber.trim(),
+  contactPerson: form.contactPerson.trim(),
+  designation: form.designation.trim(),
+  tradeLicenseImageUrl: form.tradeLicenseImageUrl.trim(),
+  vatTrnNumber: form.vatTrnNumber.trim(),
+  vatTrnImageUrl: form.vatTrnImageUrl.trim(),
   addressLine1: form.addressLine1.trim(),
   addressLine2: form.addressLine2.trim(),
   city: form.city.trim(),
