@@ -57,6 +57,9 @@ export function RfqInboxSection({ rfqs }: RfqInboxSectionProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
+              {rfqs.length === 0 ? (
+                <TableRow><TableCell colSpan={7} className="py-10 text-center text-[#9CA3AF]">No open RFQs available.</TableCell></TableRow>
+              ) : null}
               {rfqs.map((rfq) => (
                 <TableRow
                   key={rfq.id}
@@ -83,11 +86,8 @@ export function RfqInboxSection({ rfqs }: RfqInboxSectionProps) {
                     <RfqStatusBadge status={rfq.status} />
                   </TableCell>
                   <TableCell className="text-center">
-                    <Button
-                      size="sm"
-                      className="bg-[#DC2626] hover:bg-[#B91C1C] text-white rounded-sm px-4"
-                    >
-                      Quote
+                    <Button asChild size="sm" className="bg-[#DC2626] hover:bg-[#B91C1C] text-white rounded-sm px-4">
+                      <Link href={appRoutes.rfqInbox}>{rfq.status === "Quoted" ? "Update" : "Quote"}</Link>
                     </Button>
                   </TableCell>
                 </TableRow>

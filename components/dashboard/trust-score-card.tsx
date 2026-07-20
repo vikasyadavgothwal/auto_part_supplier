@@ -9,7 +9,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { appRoutes } from "@/lib/routes"
 
-export function TrustScoreCard() {
+export function TrustScoreCard({ score, fulfillmentRate, cancellationRate, responseTime }: { score: number; fulfillmentRate: number; cancellationRate: number; responseTime: string }) {
   return (
     <Card className="bg-[#1A1A1A] border-[#2A2A2A]">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -27,7 +27,7 @@ export function TrustScoreCard() {
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-2">
             <Shield className="w-4 h-4 text-yellow-500" />
-            <span className="font-bold text-yellow-500 text-base">85</span>
+            <span className="font-bold text-yellow-500 text-base">{score}</span>
             <span className="text-xs text-[#9CA3AF]">/ 100</span>
             <TrendingUp className="w-3 h-3 text-green-500" />
           </div>
@@ -41,8 +41,8 @@ export function TrustScoreCard() {
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5">
             <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />
-            <span className="text-lg font-bold text-white">4.8</span>
-            <span className="text-sm text-[#9CA3AF]">/ 5.0</span>
+            <span className="text-lg font-bold text-white">Live</span>
+            <span className="text-sm text-[#9CA3AF]">performance</span>
           </div>
           <div className="inline-flex items-center gap-1.5 rounded-full bg-green-500/10 border border-green-500/20 text-xs px-1.5 py-0.5">
             <CircleCheck className="w-3 h-3 text-green-500" />
@@ -52,15 +52,15 @@ export function TrustScoreCard() {
 
         <div className="grid grid-cols-3 gap-3">
           <div className="text-center">
-            <p className="text-lg font-bold text-[#9CA3AF]">2.4 hrs</p>
+            <p className="text-lg font-bold text-[#9CA3AF]">{responseTime}</p>
             <p className="text-xs text-[#9CA3AF] mt-0.5">Response Time</p>
           </div>
           <div className="text-center">
-            <p className="text-lg font-bold text-green-500">96%</p>
+            <p className="text-lg font-bold text-green-500">{Math.round(fulfillmentRate)}%</p>
             <p className="text-xs text-[#9CA3AF] mt-0.5">Fulfillment Rate</p>
           </div>
           <div className="text-center">
-            <p className="text-lg font-bold text-green-500">2%</p>
+            <p className="text-lg font-bold text-green-500">{Math.round(cancellationRate)}%</p>
             <p className="text-xs text-[#9CA3AF] mt-0.5">Cancellation Rate</p>
           </div>
         </div>

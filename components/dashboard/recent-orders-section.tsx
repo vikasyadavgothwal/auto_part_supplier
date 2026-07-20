@@ -55,6 +55,9 @@ export function RecentOrdersSection({ orders }: RecentOrdersSectionProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
+              {orders.length === 0 ? (
+                <TableRow><TableCell colSpan={6} className="py-10 text-center text-[#9CA3AF]">No orders received yet.</TableCell></TableRow>
+              ) : null}
               {orders.map((order) => (
                 <TableRow
                   key={order.id}

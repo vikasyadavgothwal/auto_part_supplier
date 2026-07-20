@@ -16,7 +16,7 @@ export type QuickLink = {
   highlight?: boolean
 }
 
-export type RfqStatus = "New" | "Expiring"
+export type RfqStatus = "New" | "Expiring" | "Quoted"
 
 export type DashboardRfq = {
   id: string
@@ -28,7 +28,7 @@ export type DashboardRfq = {
   status: RfqStatus
 }
 
-export type OrderStatus = "Processing" | "Shipped"
+export type OrderStatus = "Pending" | "Confirmed" | "Processing" | "Shipped" | "Delivered" | "Cancelled"
 
 export type RecentOrder = {
   id: string

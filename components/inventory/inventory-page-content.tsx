@@ -36,7 +36,7 @@ export function InventoryPageContent({ initialProducts, initialPagination, loadE
   async function loadProducts(page: number, query = searchQuery) {
     setIsLoading(true); setProductsError("")
     try {
-      const params = new URLSearchParams({ page:String(page), pageSize:"10", q:query.trim() })
+      const params = new URLSearchParams({ page:String(page), pageSize:"10", q:query.trim(), status:"mapped" })
       const response = await authenticatedFetch(`/api/supplier/parts?${params}`)
       const payload = await response.json() as SupplierPartsListResponse
       if (!response.ok || !payload.ok || !payload.parts || !payload.pagination) throw new Error(payload.message ?? "Unable to load inventory")
@@ -48,7 +48,7 @@ export function InventoryPageContent({ initialProducts, initialPagination, loadE
   return <div className="min-h-screen min-w-0 bg-background text-foreground">
     <div className="mx-auto min-w-0 max-w-[1600px] space-y-8 overflow-x-hidden p-4 sm:p-6 lg:p-8">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div><h1 className="text-3xl font-bold tracking-tight">Inventory</h1><p className="mt-2 text-sm text-brand-muted">Manage individual products or upload the complete Product Master workbook.</p></div>
+        <div><h1 className="text-3xl font-bold tracking-tight">Inventory</h1><p className="mt-2 text-sm text-brand-muted">Manage mapped products available in your supplier inventory.</p></div>
         <div className="flex flex-col gap-3 sm:flex-row">
           <Button variant="outline" className="h-12 rounded-sm px-6" onClick={() => setIsBulkDialogOpen(true)}><Upload className="mr-2 size-5" />Import Excel</Button>
           <Button className="h-12 rounded-sm px-6" onClick={() => { setEditingProduct(null); setIsProductFormOpen(true) }}><Plus className="mr-2 size-5" />Add Single Product</Button>
@@ -64,7 +64,7 @@ export function InventoryPageContent({ initialProducts, initialPagination, loadE
       {productsError ? <p className="rounded-sm border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive">{productsError}</p> : null}
       <InventoryProductsTable products={products} onEditProduct={(product) => { setEditingProduct(product); setIsProductFormOpen(true) }} />
       <div className="flex flex-col gap-3 text-sm text-brand-muted sm:flex-row sm:items-center sm:justify-between"><p>Showing {products.length ? (pagination.page - 1) * pagination.pageSize + 1 : 0}-{Math.min(pagination.page * pagination.pageSize, pagination.total)} of {pagination.total} products</p><div className="flex items-center gap-2"><Button size="sm" variant="outline" disabled={isLoading || pagination.page <= 1} onClick={() => void loadProducts(pagination.page - 1)}>Previous</Button><span>Page {pagination.page} of {pagination.totalPages}</span><Button size="sm" variant="outline" disabled={isLoading || pagination.page >= pagination.totalPages} onClick={() => void loadProducts(pagination.page + 1)}>Next</Button></div></div>
-      <Card className="surface-card rounded-sm shadow-none"><CardHeader className="pb-3"><CardTitle>Product Mapping</CardTitle><CardDescription>Single-product and Excel entries both check the local catalog first, then 17VIN, and keep unconfirmed products in Pending Review.</CardDescription></CardHeader><CardContent className="text-sm text-brand-muted">Editing OEM, MPN, supplier brand, or competitor references automatically runs mapping again.</CardContent></Card>
+      <Card className="surface-card rounded-sm shadow-none"><CardHeader className="pb-3"><CardTitle>Product Mapping</CardTitle><CardDescription>Only mapped products appear in this inventory. Single-product and Excel entries check the local catalog first, then 17VIN.</CardDescription></CardHeader><CardContent className="text-sm text-brand-muted">Unconfirmed products remain available to Admin for mapping review and appear here automatically after they are mapped.</CardContent></Card>
     </div>
     <ProductMasterForm key={editingProduct?.id ?? "new"} open={isProductFormOpen} onOpenChange={setIsProductFormOpen} product={editingProduct} onSaved={(part, message) => { const mapped = mapSupplierPartToProduct(part); setProducts((current) => editingProduct ? current.map((item) => item.id === mapped.id ? mapped : item) : [mapped, ...current].slice(0, pagination.pageSize)); setFeedback({ tone:"success", title:editingProduct ? "Product updated" : "Product added", message }); setEditingProduct(null); void loadProducts(editingProduct ? pagination.page : 1) }} />
     <BulkImportDialog open={isBulkDialogOpen} onOpenChange={setIsBulkDialogOpen} onProductsImported={() => void loadProducts(1)} />

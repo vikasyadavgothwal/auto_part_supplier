@@ -11,8 +11,18 @@ export type LiveOrder = {
     firstName: string | null
     lastName: string | null
     email: string | null
+    phone: string | null
     activeRole: string
   }
+  deliveryRecipientName: string | null
+  deliveryPhone: string | null
+  deliveryAddressLine1: string | null
+  deliveryAddressLine2: string | null
+  deliveryLandmark: string | null
+  deliveryCity: string | null
+  deliveryState: string | null
+  deliveryPostalCode: string | null
+  deliveryCountry: string | null
   supplier: {
     id: string
     companyName: string | null

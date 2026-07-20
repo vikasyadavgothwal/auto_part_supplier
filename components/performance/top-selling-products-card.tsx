@@ -16,6 +16,9 @@ export function TopSellingProductsCard({
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
+          {products.length === 0 ? (
+            <p className="py-10 text-center text-brand-muted">No sold products yet.</p>
+          ) : null}
           {products.map((product) => (
             <div
               key={product.rank}

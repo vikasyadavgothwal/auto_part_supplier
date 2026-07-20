@@ -1,6 +1,9 @@
 import type { OrderStatus, RfqStatus } from "./types"
 
 export function RfqStatusBadge({ status }: { status: RfqStatus }) {
+  if (status === "Quoted") {
+    return <span className="inline-flex rounded-full border border-green-500/20 bg-green-500/10 px-3 py-1 text-xs font-medium text-green-500">Quoted</span>
+  }
   if (status === "Expiring") {
     return (
       <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border bg-yellow-500/10 text-yellow-500 border-yellow-500/20">
@@ -17,17 +20,17 @@ export function RfqStatusBadge({ status }: { status: RfqStatus }) {
 }
 
 export function OrderStatusBadge({ status }: { status: OrderStatus }) {
-  if (status === "Shipped") {
+  if (status === "Shipped" || status === "Delivered") {
     return (
       <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border bg-green-500/10 text-green-500 border-green-500/20">
-        Shipped
+        {status}
       </span>
     )
   }
 
   return (
     <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border bg-yellow-500/10 text-yellow-500 border-yellow-500/20">
-      Processing
+      {status}
     </span>
   )
 }

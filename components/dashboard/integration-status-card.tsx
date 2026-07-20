@@ -1,6 +1,5 @@
 import { CircleCheck, RefreshCw } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 import type { Integration } from "./types"
@@ -51,13 +50,6 @@ export function IntegrationStatusCard({
             </div>
           )
         })}
-
-        <Button
-          variant="outline"
-          className="w-full mt-2 border-[#2A2A2A] text-white hover:border-[#DC2626] hover:bg-[#DC2626]/10 transition-all bg-transparent"
-        >
-          Manage Integrations
-        </Button>
       </CardContent>
     </Card>
   )
