@@ -34,6 +34,13 @@ type BackendRfq = {
     validUntil: string | null
     notes: string | null
     status: "submitted" | "accepted" | "rejected" | "withdrawn"
+    items: Array<{
+      id: string
+      rfqPartId: string
+      unitPrice: number
+      lineTotal: number
+      partType: string
+    }>
   }>
 }
 

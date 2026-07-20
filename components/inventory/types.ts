@@ -107,6 +107,30 @@ export type SupplierPartCreateResponse = {
 
 export type SupplierPartUpdateResponse = SupplierPartCreateResponse
 
+export type SupplierProductMasterPayload = {
+  mode: "product_master_form"
+  identity: Record<string, string>
+  category: { id: string; name: string; parentId: string }
+  brand: { id: string; name: string; productCategories: string[]; tier: string }
+  attributes: Record<string, string>
+  vehicle: Record<string, string>
+  pricing: Record<string, string>
+  inventory: Record<string, string>
+  images: { primaryUrl: string; galleryUrls: string[]; storedUrls: string[] }
+  document: Record<string, string>
+  crossReferences: {
+    oemNumber: string
+    oemSupersessionNumbers: string[]
+    competitorPartNumber: string
+    competitorBrandName: string
+    hsCode: string
+  }
+  bundle: Record<string, string>
+  shipping: Record<string, string>
+  compliance: Record<string, string>
+  marketplace: { allowBackorders: boolean; maxOrderQuantity: string; isActive: boolean }
+}
+
 export type UpdateSupplierPartPayload = {
   vendorSku: string
   productName: string
@@ -147,7 +171,17 @@ export type ProductBulkUploadSummary = {
   unmappedCount: number
   mappedParts: SupplierPartApiRecord[]
   unmapped: BulkUnmappedRow[]
+  unmappedWorkbookBase64?: string | null
   unmatchedImageRows: BulkUnmappedRow[]
+  stockUpdatedCount?: number
+  pricingUpdatedCount?: number
+  ignoredBundleRows?: number
+  lookupSummary?: {
+    categories: number
+    vehicles: number
+    brands: number
+    grades: number
+  }
 }
 
 export type ImageBulkUploadSummary = {
