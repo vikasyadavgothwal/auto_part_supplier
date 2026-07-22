@@ -144,7 +144,6 @@ export function ProductMasterForm({ open, onOpenChange, product, onSaved }: {
           {error ? <div className="flex gap-2 rounded-sm border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive"><TriangleAlert className="size-4 shrink-0" />{error}</div> : null}
           <div className="rounded-sm border border-primary/20 bg-primary/5 p-4 text-sm text-brand-muted">
             <p className="flex items-center gap-2 font-semibold text-foreground"><CircleCheck className="size-4 text-primary" />Automatic product mapping</p>
-            {/* <p className="mt-1">The system checks the local master database first, then 17VIN. If OEM is blank, supplier brand plus competitor part and brand are used.</p> */}
           </div>
           {groups.map((group) => <section key={group.title} className="rounded-sm border border-border bg-brand-surface p-4 sm:p-5">
             <h3 className="font-semibold text-foreground">{group.title}</h3><p className="mt-1 text-xs text-brand-muted">{group.description}</p>
