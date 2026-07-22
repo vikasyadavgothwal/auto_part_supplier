@@ -42,7 +42,6 @@ export type SupplierOfferPart = {
   partName: string
   partNumber: string | null
   quantity: number
-  targetPrice: number | null
   notes: string | null
 }
 

@@ -62,10 +62,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const result = await refresh(request)
+  const requestedReturn = request.nextUrl.searchParams.get("returnTo")
+  const safeReturn = requestedReturn?.startsWith("/") && !requestedReturn.startsWith("//") && !requestedReturn.includes("/api/auth/")
+    ? requestedReturn
+    : appRoutes.dashboard
   const response = new NextResponse(null, {
     status: 307,
     headers: {
-      Location: result.ok ? appRoutes.dashboard : appRoutes.login,
+      Location: result.ok ? safeReturn : appRoutes.login,
     },
   })
   for (const value of getSetCookieHeaders(result.response.headers)) {

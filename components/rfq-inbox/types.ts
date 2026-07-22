@@ -6,10 +6,10 @@ export type RfqStatus = "New" | "Expiring" | "Quoted"
 
 export type RfqPart = {
   id: string
+  vehicleVin: string | null
   partName: string
   partNumber: string | null
   quantity: number
-  targetPrice: number | null
   notes: string | null
 }
 
@@ -35,6 +35,7 @@ export type Rfq = {
   publicId: string
   buyer: string
   vehicle: string
+  vehicleVin: string | null
   part: string
   quantity: string
   deadline: string

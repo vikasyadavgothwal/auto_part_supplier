@@ -50,6 +50,43 @@ export function LiveOrdersPageContent({
   const [selected, setSelected] = React.useState<LiveOrder | null>(null)
   const [loading, setLoading] = React.useState(false)
   const [error, setError] = React.useState("")
+  const [actionPending, setActionPending] = React.useState(false)
+  const [actionMessage, setActionMessage] = React.useState("")
+  const [proofFile, setProofFile] = React.useState<File | null>(null)
+  const [recipientName, setRecipientName] = React.useState("")
+  const [proofNote, setProofNote] = React.useState("")
+
+  const replaceOrder = (order: LiveOrder) => {
+    setOrders((current) => current.map((item) => item.id === order.id ? order : item))
+    setSelected(order)
+  }
+
+  const confirmOrder = async () => {
+    if (!selected) return
+    setActionPending(true); setActionMessage("")
+    try {
+      const response = await authenticatedFetch(`/api/supplier/orders/${selected.id}`, { method: "PATCH" })
+      const payload = await response.json() as { ok: boolean; order?: LiveOrder; message?: string }
+      if (!response.ok || !payload.ok || !payload.order) throw new Error(payload.message || "Unable to confirm order")
+      replaceOrder(payload.order)
+      setActionMessage("Order confirmed. The customer has been notified.")
+    } catch (caught) { setActionMessage(caught instanceof Error ? caught.message : "Unable to confirm order") }
+    finally { setActionPending(false) }
+  }
+
+  const submitProof = async () => {
+    if (!selected || !proofFile) { setActionMessage("Choose a delivery proof image."); return }
+    setActionPending(true); setActionMessage("")
+    try {
+      const body = new FormData(); body.append("proof", proofFile); body.append("recipientName", recipientName); body.append("note", proofNote)
+      const response = await authenticatedFetch(`/api/supplier/orders/${selected.id}`, { method: "POST", body })
+      const payload = await response.json() as { ok: boolean; order?: LiveOrder; message?: string }
+      if (!response.ok || !payload.ok || !payload.order) throw new Error(payload.message || "Unable to submit proof")
+      replaceOrder(payload.order); setProofFile(null)
+      setActionMessage("Proof of delivery submitted. The customer has been notified.")
+    } catch (caught) { setActionMessage(caught instanceof Error ? caught.message : "Unable to submit proof") }
+    finally { setActionPending(false) }
+  }
 
   const load = async (page: number, query = search) => {
     setLoading(true)
@@ -93,6 +130,6 @@ export function LiveOrdersPageContent({
       </Card>
       <div className="flex flex-col gap-3 text-sm text-brand-muted sm:flex-row sm:items-center sm:justify-between"><p>Showing {orders.length ? (pagination.page - 1) * pagination.pageSize + 1 : 0}-{Math.min(pagination.page * pagination.pageSize, pagination.total)} of {pagination.total}</p><div className="flex items-center gap-2"><Button variant="outline" size="sm" disabled={loading || pagination.page <= 1} onClick={() => void load(pagination.page - 1)}>Previous</Button><span>Page {pagination.page} of {pagination.totalPages}</span><Button variant="outline" size="sm" disabled={loading || pagination.page >= pagination.totalPages} onClick={() => void load(pagination.page + 1)}>Next</Button></div></div>
     </div>
-    <Dialog open={Boolean(selected)} onOpenChange={(open) => !open && setSelected(null)}><DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl"><DialogHeader><DialogTitle>{selected?.publicId}</DialogTitle><DialogDescription>{selected?.source === "rfq" ? `Created from ${selected.rfq?.publicId}` : "Direct customer order"}</DialogDescription></DialogHeader>{selected ? <div className="space-y-5"><div className="grid gap-2 rounded-lg border p-4 text-sm sm:grid-cols-2"><p><span className="text-brand-muted">Customer:</span> {buyerName(selected)}</p><p><span className="text-brand-muted">Email:</span> {selected.buyer.email || "-"}</p><p><span className="text-brand-muted">Account phone:</span> {selected.buyer.phone || "-"}</p><p><span className="text-brand-muted">Recipient:</span> {selected.deliveryRecipientName || buyerName(selected)}</p><p><span className="text-brand-muted">Delivery phone:</span> {selected.deliveryPhone || selected.buyer.phone || "-"}</p><p className="sm:col-span-2"><span className="text-brand-muted">Delivery address:</span> {deliveryAddress(selected)}</p><p><span className="text-brand-muted">Total:</span> {money(selected.totalAmount)}</p><p><span className="text-brand-muted">Status:</span> <span className="capitalize">{selected.status}</span></p>{selected.rfq ? <><p><span className="text-brand-muted">Delivery:</span> {selected.rfq.deliveryRequirement}</p><p><span className="text-brand-muted">Payment:</span> {selected.rfq.paymentTerms}</p><p className="sm:col-span-2"><span className="text-brand-muted">Vehicle:</span> {[selected.rfq.vehicleYear, selected.rfq.vehicleMake, selected.rfq.vehicleModel, selected.rfq.vehicleTrim].filter(Boolean).join(" ") || "-"}{selected.rfq.vehicleVin ? ` · VIN ${selected.rfq.vehicleVin}` : ""}</p></> : null}</div><div><h3 className="mb-2 font-semibold">Items</h3>{selected.items.map((item) => <div key={item.id} className="flex justify-between gap-4 border-t py-3 text-sm"><div><p>{item.partName}</p><p className="text-brand-muted">{item.partNumber || "No part number"}</p><p className="text-brand-muted">Unit price: {item.unitPrice === null ? "Included in quote" : money(item.unitPrice)}</p></div><div className="text-right"><p>Qty {item.quantity}</p><p className="font-semibold">{item.lineTotal === null ? "Included in quote" : money(item.lineTotal)}</p></div></div>)}</div></div> : null}</DialogContent></Dialog>
+    <Dialog open={Boolean(selected)} onOpenChange={(open) => { if (!open) { setSelected(null); setActionMessage("") } }}><DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl"><DialogHeader><DialogTitle>{selected?.publicId}</DialogTitle><DialogDescription>{selected?.source === "rfq" ? `Created from ${selected.rfq?.publicId}` : "Direct customer order"}</DialogDescription></DialogHeader>{selected ? <div className="space-y-5"><div className="grid gap-2 rounded-lg border p-4 text-sm sm:grid-cols-2"><p><span className="text-brand-muted">Customer:</span> {buyerName(selected)}</p><p><span className="text-brand-muted">Payment:</span> <span className="capitalize">{selected.paymentStatus}</span></p><p><span className="text-brand-muted">Account phone:</span> {selected.buyer.phone || "-"}</p><p><span className="text-brand-muted">Recipient:</span> {selected.deliveryRecipientName || buyerName(selected)}</p><p><span className="text-brand-muted">Delivery phone:</span> {selected.deliveryPhone || selected.buyer.phone || "-"}</p><p className="sm:col-span-2"><span className="text-brand-muted">Delivery address:</span> {deliveryAddress(selected)}</p><p><span className="text-brand-muted">Total:</span> {money(selected.totalAmount)}</p><p><span className="text-brand-muted">Status:</span> <span className="capitalize">{selected.status}</span></p></div><div><h3 className="mb-2 font-semibold">Items</h3>{selected.items.map((item) => <div key={item.id} className="flex justify-between gap-4 border-t py-3 text-sm"><div><p>{item.partName}</p><p className="text-brand-muted">{item.partNumber || "No part number"}</p></div><div className="text-right"><p>Qty {item.quantity}</p><p className="font-semibold">{item.lineTotal === null ? "Included in quote" : money(item.lineTotal)}</p></div></div>)}</div><div className="space-y-3 rounded-lg border p-4"><h3 className="font-semibold">Order actions</h3>{selected.status === "pending" ? <Button disabled={actionPending || selected.paymentStatus !== "succeeded"} onClick={() => void confirmOrder()}>{actionPending ? "Confirming..." : "Confirm order"}</Button> : null}{["confirmed", "processing", "shipped"].includes(selected.status) ? <div className="space-y-3"><Input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setProofFile(event.target.files?.[0] ?? null)} /><Input placeholder="Recipient name (optional)" value={recipientName} onChange={(event) => setRecipientName(event.target.value)} /><Input placeholder="Delivery note (optional)" value={proofNote} onChange={(event) => setProofNote(event.target.value)} /><Button disabled={actionPending || !proofFile} onClick={() => void submitProof()}>{actionPending ? "Submitting..." : "Submit proof of delivery"}</Button><p className="text-xs text-brand-muted">JPG, PNG or WebP, maximum 5 MB. Submitting marks the order delivered.</p></div> : null}{selected.proofSubmittedAt ? <p className="text-sm text-emerald-500">POD submitted {new Date(selected.proofSubmittedAt).toLocaleString("en-AE")}{selected.proofRecipientName ? ` to ${selected.proofRecipientName}` : ""}.</p> : null}{actionMessage ? <p className="text-sm text-brand-muted">{actionMessage}</p> : null}</div></div> : null}</DialogContent></Dialog>
   </div>
 }

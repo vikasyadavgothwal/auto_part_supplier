@@ -12,6 +12,7 @@ type BackendRfq = {
   vehicleMake: string | null
   vehicleModel: string | null
   vehicleTrim: string | null
+  vehicleVin: string | null
   responseDeadline: string
   createdAt: string
   projectName: string
@@ -20,10 +21,10 @@ type BackendRfq = {
   paymentTerms: string
   parts: Array<{
     id: string
+    vehicleVin: string | null
     partName: string
     partNumber: string | null
     quantity: number
-    targetPrice: number | null
     notes: string | null
   }>
   bids: Array<{
@@ -62,7 +63,8 @@ export default async function RfqInboxPage() {
           id: rfq.id,
           publicId: rfq.publicId,
           buyer: rfq.companyName,
-          vehicle: [rfq.vehicleYear, rfq.vehicleMake, rfq.vehicleModel, rfq.vehicleTrim].filter(Boolean).join(" ") || "Not specified",
+          vehicle: new Set(rfq.parts.map((part) => part.vehicleVin).filter(Boolean)).size > 1 ? `${new Set(rfq.parts.map((part) => part.vehicleVin).filter(Boolean)).size} vehicles` : [rfq.vehicleYear, rfq.vehicleMake, rfq.vehicleModel, rfq.vehicleTrim].filter(Boolean).join(" ") || "Not specified",
+          vehicleVin: rfq.vehicleVin,
           part: rfq.parts.length === 1 ? rfq.parts[0].partName : `${rfq.parts.length} parts`,
           quantity: String(rfq.parts.reduce((sum, part) => sum + part.quantity, 0)),
           deadline: new Date(rfq.responseDeadline).toLocaleDateString("en-AE"),

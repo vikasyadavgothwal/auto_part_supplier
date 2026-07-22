@@ -51,11 +51,16 @@ NEXT_PUBLIC_FIREBASE_PROJECT_ID=
 NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=
 NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
 NEXT_PUBLIC_FIREBASE_APP_ID=
+NEXT_PUBLIC_FIREBASE_VAPID_KEY=
 ```
 
 Use the same Firebase web application values as `auto-parts-pro-user`. If the
 Firebase values are omitted, login falls back to backend-managed email and
 password accounts.
+
+Firebase push notifications require `NEXT_PUBLIC_FIREBASE_VAPID_KEY` plus the
+Firebase web config above. The dashboard registers the browser token only after
+login and browser notification permission.
 
 `ADMIN_API_BASE_URL` must point to the backend API server, not the supplier
 dashboard domain. For example, do not set it to
@@ -111,6 +116,7 @@ Detected or documented variables:
 - `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`
 - `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
 - `NEXT_PUBLIC_FIREBASE_APP_ID`
+- `NEXT_PUBLIC_FIREBASE_VAPID_KEY`
 - `NEXT_PUBLIC_BASE_PATH`
 
 ### Run, Build, and Test Commands

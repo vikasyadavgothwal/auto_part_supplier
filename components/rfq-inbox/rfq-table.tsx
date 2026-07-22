@@ -60,7 +60,7 @@ const money = (value: number) =>
 
 export function RfqTable({ rfqs, onBidSubmitted }: RfqTableProps) {
   const [selected, setSelected] = React.useState<Rfq | null>(null)
-  const [itemQuotes, setItemQuotes] = React.useState<Record<string, { unitPrice: string; partType: (typeof partTypeOptions)[number] }>>({})
+  const [itemQuotes, setItemQuotes] = React.useState<Record<string, { unitPrice: string; partType: "" | (typeof partTypeOptions)[number] }>>({})
   const [deliveryDays, setDeliveryDays] = React.useState("")
   const [validUntil, setValidUntil] = React.useState("")
   const [notes, setNotes] = React.useState("")
@@ -73,7 +73,7 @@ export function RfqTable({ rfqs, onBidSubmitted }: RfqTableProps) {
       const existing = rfq.myBid?.items.find((item) => item.rfqPartId === part.id)
       return [part.id, {
         unitPrice: existing ? String(existing.unitPrice) : "",
-        partType: partTypeOptions.find((option) => option === existing?.partType) ?? "New",
+        partType: partTypeOptions.find((option) => option === existing?.partType) ?? "",
       }]
     })))
     setDeliveryDays(rfq.myBid ? String(rfq.myBid.deliveryDays) : "")
@@ -85,15 +85,28 @@ export function RfqTable({ rfqs, onBidSubmitted }: RfqTableProps) {
   const submitQuote = async (event: React.FormEvent) => {
     event.preventDefault()
     if (!selected) return
-    setSubmitting(true)
     setError("")
+    const incompletePart = selected.parts.find((part) => {
+      const item = itemQuotes[part.id]
+      return Boolean(item?.unitPrice) !== Boolean(item?.partType)
+    })
+    if (incompletePart) {
+      setError(`Enter both unit price and condition for ${incompletePart.partName}, or leave both blank.`)
+      return
+    }
+    const completedParts = selected.parts.filter((part) => itemQuotes[part.id]?.unitPrice && itemQuotes[part.id]?.partType)
+    if (!completedParts.length) {
+      setError("Complete at least one product row before saving the quote.")
+      return
+    }
+    setSubmitting(true)
     try {
       const response = await authenticatedFetch(`/api/supplier/rfqs/${selected.id}/bids`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           deliveryDays,
-          items: selected.parts.map((part) => ({
+          items: completedParts.map((part) => ({
             rfqPartId: part.id,
             unitPrice: itemQuotes[part.id]?.unitPrice,
             partType: itemQuotes[part.id]?.partType,
@@ -174,9 +187,10 @@ export function RfqTable({ rfqs, onBidSubmitted }: RfqTableProps) {
                 <TableCell className="px-6 py-4 text-sm text-brand-muted">
                   <Button
                     className="h-9 rounded-sm px-4 text-sm hover:bg-brand-primary-hover"
+                    disabled={Boolean(rfq.myBid)}
                     onClick={() => openQuote(rfq)}
                   >
-                    {rfq.myBid ? "Update Quote" : "Quote"}
+                    {rfq.myBid ? "Quoted" : "Quote"}
                   </Button>
                 </TableCell>
               </TableRow>
@@ -191,14 +205,14 @@ export function RfqTable({ rfqs, onBidSubmitted }: RfqTableProps) {
           <DialogTitle>Quote {selected?.publicId}</DialogTitle>
           <DialogDescription>
             {selected?.projectName} for {selected?.buyer}. Enter an AED unit price
-            for every requested part. Your latest submission replaces your previous quote.
+            for the products you can supply. This quotation can be submitted only once and cannot be edited later.
           </DialogDescription>
         </DialogHeader>
         {selected ? (
           <form className="space-y-5" onSubmit={submitQuote}>
             <div className="rounded-lg border border-border bg-muted/30 p-4 text-sm">
               <div className="grid gap-2 sm:grid-cols-2">
-                <p><span className="text-muted-foreground">Vehicle:</span> {selected.vehicle}</p>
+                {new Set(selected.parts.map((part) => part.vehicleVin).filter(Boolean)).size <= 1 ? <><p><span className="text-muted-foreground">Vehicle:</span> {selected.vehicle}</p><p><span className="text-muted-foreground">VIN:</span> <span className="font-mono">{selected.vehicleVin || "Not provided"}</span></p></> : null}
                 <p><span className="text-muted-foreground">Deadline:</span> {selected.deadline}</p>
                 <p><span className="text-muted-foreground">Delivery:</span> {selected.deliveryRequirement}</p>
                 <p><span className="text-muted-foreground">Payment:</span> {selected.paymentTerms}</p>
@@ -213,9 +227,9 @@ export function RfqTable({ rfqs, onBidSubmitted }: RfqTableProps) {
             <div className="space-y-3">
               <div className="flex flex-col gap-1 rounded-lg border border-primary/30 bg-primary/5 p-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <Label className="text-base">Quote every requested part</Label>
+                  <Label className="text-base">Select the products you can quote</Label>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Complete all {selected.parts.length} AED unit-price fields below.
+                    Enter both price and condition for each product you want to include. Leave unavailable products blank.
                   </p>
                 </div>
                 <div className="sm:text-right">
@@ -223,37 +237,23 @@ export function RfqTable({ rfqs, onBidSubmitted }: RfqTableProps) {
                   <strong className="text-lg text-primary">{money(quoteTotal)}</strong>
                 </div>
               </div>
-              {selected.parts.map((part) => (
-                <div key={part.id} className="grid gap-4 rounded-lg border border-border bg-card p-4 md:grid-cols-2 md:items-end xl:grid-cols-[minmax(220px,1fr)_180px_190px_170px]">
-                  <div>
-                    <p className="font-medium">{part.partName}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Part number: {part.partNumber || "Not provided"}
-                    </p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Quantity: {part.quantity}
-                    </p>
-                    <p className="mt-2 text-sm font-medium">
-                      Buyer target: {part.targetPrice === null ? "Not provided" : money(part.targetPrice)}
-                    </p>
-                    {part.notes ? <p className="mt-1 text-xs text-muted-foreground">Notes: {part.notes}</p> : null}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor={`unit-price-${part.id}`}>Your unit price (AED)</Label>
-                    <Input id={`unit-price-${part.id}`} type="number" inputMode="decimal" min="0.01" step="0.01" required placeholder="Enter AED price" value={itemQuotes[part.id]?.unitPrice ?? ""} onChange={(event) => setItemQuotes((current) => ({ ...current, [part.id]: { unitPrice: event.target.value, partType: current[part.id]?.partType ?? "New" } }))} className="border-primary/50 bg-background font-medium" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor={`part-type-${part.id}`}>Condition</Label>
-                    <select id={`part-type-${part.id}`} required value={itemQuotes[part.id]?.partType ?? "New"} onChange={(event) => setItemQuotes((current) => ({ ...current, [part.id]: { unitPrice: current[part.id]?.unitPrice ?? "", partType: event.target.value as (typeof partTypeOptions)[number] } }))} className="h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm">
-                      {partTypeOptions.map((option) => <option key={option} value={option}>{option}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Line total (AED)</p>
-                    <p className="mt-2 font-semibold">{money((Number(itemQuotes[part.id]?.unitPrice) || 0) * part.quantity)}</p>
-                  </div>
-                </div>
-              ))}
+              <div className="overflow-x-auto rounded-lg border border-border">
+                <Table>
+                  <TableHeader><TableRow className="bg-muted/50"><TableHead>VIN</TableHead><TableHead>Requested part</TableHead><TableHead>Part number</TableHead><TableHead className="text-center">Qty</TableHead><TableHead className="min-w-44">Unit price (AED)</TableHead><TableHead className="min-w-48">Condition</TableHead><TableHead className="text-right">Line total</TableHead></TableRow></TableHeader>
+                  <TableBody>
+                    {selected.parts.map((part) => (
+                      <TableRow key={part.id}>
+                        <TableCell className="font-mono text-xs">{part.vehicleVin || selected.vehicleVin || "-"}</TableCell><TableCell><p className="font-medium">{part.partName}</p>{part.notes ? <p className="mt-1 text-xs text-muted-foreground">{part.notes}</p> : null}</TableCell>
+                        <TableCell>{part.partNumber || "Not provided"}</TableCell>
+                        <TableCell className="text-center">{part.quantity}</TableCell>
+                        <TableCell><Input id={`unit-price-${part.id}`} aria-label={`${part.partName} unit price`} type="number" inputMode="decimal" min="0.01" step="0.01" placeholder="Enter price" value={itemQuotes[part.id]?.unitPrice ?? ""} onChange={(event) => setItemQuotes((current) => ({ ...current, [part.id]: { unitPrice: event.target.value, partType: current[part.id]?.partType ?? "" } }))} className="border-primary/50 bg-background font-medium" /></TableCell>
+                        <TableCell><select id={`part-type-${part.id}`} aria-label={`${part.partName} condition`} value={itemQuotes[part.id]?.partType ?? ""} onChange={(event) => setItemQuotes((current) => ({ ...current, [part.id]: { unitPrice: current[part.id]?.unitPrice ?? "", partType: event.target.value as "" | (typeof partTypeOptions)[number] } }))} className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"><option value="" disabled>Select condition</option>{partTypeOptions.map((option) => <option key={option} value={option}>{option}</option>)}</select></TableCell>
+                        <TableCell className="text-right font-semibold">{money((Number(itemQuotes[part.id]?.unitPrice) || 0) * part.quantity)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             </div>
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
@@ -275,7 +275,7 @@ export function RfqTable({ rfqs, onBidSubmitted }: RfqTableProps) {
             {error ? <p className="text-sm text-destructive">{error}</p> : null}
             <DialogFooter className="sticky bottom-0 -mx-4 -mb-4 border-t border-border bg-background/95 px-4 py-4 backdrop-blur sm:-mx-6 sm:-mb-6 sm:px-6">
               <Button type="button" variant="outline" onClick={() => setSelected(null)}>Cancel</Button>
-              <Button type="submit" disabled={submitting || selected.parts.some((part) => !itemQuotes[part.id]?.unitPrice)}>{submitting ? "Submitting..." : selected.myBid ? "Update Complete Quote" : "Submit Complete Quote"}</Button>
+              <Button type="submit" disabled={submitting}>{submitting ? "Submitting..." : "Submit Quote"}</Button>
             </DialogFooter>
           </form>
         ) : null}

@@ -204,7 +204,7 @@ export function OffersPageContent({
             Offers
           </h1>
           <p className="mt-2 text-sm text-brand-muted">
-            Track submitted RFQ quotes, suggested prices, and quote results.
+            Track your submitted RFQ prices and quote results.
           </p>
         </div>
 
