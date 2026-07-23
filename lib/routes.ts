@@ -17,6 +17,7 @@ export const appRoutes = {
   orders: "/orders",
   inventory: "/inventory",
   offers: "/offers",
+  reviews: "/reviews",
   performance: "/performance",
   settings: "/settings",
   login: "/login",

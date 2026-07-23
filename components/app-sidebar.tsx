@@ -9,6 +9,7 @@ import {
   FileText,
   ShoppingCart,
   BarChart3,
+  Star,
 } from "lucide-react"
 
 import {
@@ -29,6 +30,7 @@ const items = [
   { title: "Orders", url: appRoutes.orders, icon: ShoppingCart },
   { title: "Inventory", url: appRoutes.inventory, icon: Box },
   { title: "Offers", url: appRoutes.offers, icon: BarChart3 },
+  { title: "Reviews", url: appRoutes.reviews, icon: Star },
   { title: "Performance", url: appRoutes.performance, icon: BarChart3 },
 ]
 export function AppSidebar() {

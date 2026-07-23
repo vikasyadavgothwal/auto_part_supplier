@@ -41,6 +41,7 @@ type BackendRfq = {
       unitPrice: number
       lineTotal: number
       partType: string
+      deliveryOption: string
     }>
   }>
 }

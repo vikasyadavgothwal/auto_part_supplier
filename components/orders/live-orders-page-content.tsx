@@ -33,6 +33,16 @@ const statusClass = (status: LiveOrder["status"]) => status === "delivered"
   : status === "shipped" ? "bg-blue-500/10 text-blue-500"
   : status === "cancelled" ? "bg-red-500/10 text-red-500"
   : "bg-amber-500/10 text-amber-500"
+const deliveryOptions = [
+  { value: "24_hours", label: "24 hours" },
+  { value: "48_hours", label: "48 hours" },
+  { value: "72_hours", label: "72 hours" },
+  { value: "one_week", label: "One week" },
+  { value: "one_month", label: "One month" },
+  { value: "more_than_one_month", label: "More than one month" },
+] as const
+const deliveryLabel = (value: string | null | undefined) =>
+  deliveryOptions.find((option) => option.value === value)?.label ?? "Product lead time"
 
 export function LiveOrdersPageContent({
   initialOrders,
@@ -55,35 +65,49 @@ export function LiveOrdersPageContent({
   const [proofFile, setProofFile] = React.useState<File | null>(null)
   const [recipientName, setRecipientName] = React.useState("")
   const [proofNote, setProofNote] = React.useState("")
+  const [batchItemIds, setBatchItemIds] = React.useState<string[]>([])
 
   const replaceOrder = (order: LiveOrder) => {
     setOrders((current) => current.map((item) => item.id === order.id ? order : item))
     setSelected(order)
+    setBatchItemIds([])
+  }
+
+  const openOrder = (order: LiveOrder) => {
+    setSelected(order)
+    setBatchItemIds([])
+    setProofFile(null)
+    setRecipientName("")
+    setProofNote("")
+    setActionMessage("")
   }
 
   const confirmOrder = async () => {
     if (!selected) return
     setActionPending(true); setActionMessage("")
     try {
-      const response = await authenticatedFetch(`/api/supplier/orders/${selected.id}`, { method: "PATCH" })
+      const response = await authenticatedFetch(`/api/supplier/orders/${selected.id}`, {
+        method: "PATCH",
+      })
       const payload = await response.json() as { ok: boolean; order?: LiveOrder; message?: string }
       if (!response.ok || !payload.ok || !payload.order) throw new Error(payload.message || "Unable to confirm order")
       replaceOrder(payload.order)
-      setActionMessage("Order confirmed. The customer has been notified.")
+      setActionMessage("Order accepted. The customer has been notified.")
     } catch (caught) { setActionMessage(caught instanceof Error ? caught.message : "Unable to confirm order") }
     finally { setActionPending(false) }
   }
 
   const submitProof = async () => {
     if (!selected || !proofFile) { setActionMessage("Choose a delivery proof image."); return }
+    if (!batchItemIds.length) { setActionMessage("Select at least one item for this delivery batch."); return }
     setActionPending(true); setActionMessage("")
     try {
-      const body = new FormData(); body.append("proof", proofFile); body.append("recipientName", recipientName); body.append("note", proofNote)
+      const body = new FormData(); body.append("proof", proofFile); body.append("recipientName", recipientName); body.append("note", proofNote); body.append("itemIds", JSON.stringify(batchItemIds))
       const response = await authenticatedFetch(`/api/supplier/orders/${selected.id}`, { method: "POST", body })
       const payload = await response.json() as { ok: boolean; order?: LiveOrder; message?: string }
       if (!response.ok || !payload.ok || !payload.order) throw new Error(payload.message || "Unable to submit proof")
-      replaceOrder(payload.order); setProofFile(null)
-      setActionMessage("Proof of delivery submitted. The customer has been notified.")
+      replaceOrder(payload.order); setProofFile(null); setBatchItemIds([])
+      setActionMessage(payload.order.status === "delivered" ? "All items delivered. The customer has been notified." : "Delivery batch submitted. The customer has been notified.")
     } catch (caught) { setActionMessage(caught instanceof Error ? caught.message : "Unable to submit proof") }
     finally { setActionPending(false) }
   }
@@ -125,11 +149,11 @@ export function LiveOrdersPageContent({
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
       <Card className="surface-card w-full overflow-hidden rounded-sm py-0 shadow-none">
         <div className="overflow-x-auto"><table className="w-full min-w-[1000px] text-sm"><thead className="bg-brand-surface text-brand-muted"><tr><th className="p-4 text-left">Order ID</th><th className="p-4 text-left">Date</th><th className="p-4 text-left">Customer</th><th className="p-4 text-left">Order Type</th><th className="p-4 text-left">Parts</th><th className="p-4 text-left">Amount</th><th className="p-4 text-left">Status</th><th className="p-4 text-left">Action</th></tr></thead>
-        <tbody>{orders.map((order) => <tr key={order.id} className="border-t border-border hover:bg-brand-panel-strong"><td className="p-4 font-semibold text-primary">{order.publicId}</td><td className="p-4 text-brand-muted">{new Date(order.createdAt).toLocaleDateString("en-AE")}</td><td className="p-4">{buyerName(order)}</td><td className="p-4 capitalize">{order.source === "rfq" ? "RFQ order" : "Direct order"}</td><td className="p-4">{order.items[0]?.partName || "-"}{order.items.length > 1 ? ` +${order.items.length - 1}` : ""}</td><td className="p-4 font-semibold">{money(order.totalAmount)}</td><td className="p-4"><span className={`rounded-full px-3 py-1 text-xs font-medium capitalize ${statusClass(order.status)}`}>{order.status}</span></td><td className="p-4"><Button size="sm" variant="outline" onClick={() => setSelected(order)}>View</Button></td></tr>)}</tbody></table></div>
+        <tbody>{orders.map((order) => <tr key={order.id} className="border-t border-border hover:bg-brand-panel-strong"><td className="p-4 font-semibold text-primary">{order.publicId}</td><td className="p-4 text-brand-muted">{new Date(order.createdAt).toLocaleDateString("en-AE")}</td><td className="p-4">{buyerName(order)}</td><td className="p-4 capitalize">{order.source === "rfq" ? "RFQ order" : "Direct order"}</td><td className="p-4">{order.items[0]?.partName || "-"}{order.items.length > 1 ? ` +${order.items.length - 1}` : ""}</td><td className="p-4 font-semibold">{money(order.totalAmount)}</td><td className="p-4"><div className="min-w-32"><span className={`rounded-full px-3 py-1 text-xs font-medium capitalize ${statusClass(order.status)}`}>{order.status}</span><div className="mt-2 h-1.5 rounded-full bg-muted"><div className="h-full rounded-full bg-primary" style={{ width: `${order.deliveryProgress}%` }} /></div><p className="mt-1 text-xs text-brand-muted">{order.deliveryProgress}% delivered</p></div></td><td className="p-4"><Button size="sm" variant="outline" onClick={() => openOrder(order)}>View</Button></td></tr>)}</tbody></table></div>
         {!orders.length && !loading ? <p className="p-8 text-center text-brand-muted">No orders found.</p> : null}
       </Card>
       <div className="flex flex-col gap-3 text-sm text-brand-muted sm:flex-row sm:items-center sm:justify-between"><p>Showing {orders.length ? (pagination.page - 1) * pagination.pageSize + 1 : 0}-{Math.min(pagination.page * pagination.pageSize, pagination.total)} of {pagination.total}</p><div className="flex items-center gap-2"><Button variant="outline" size="sm" disabled={loading || pagination.page <= 1} onClick={() => void load(pagination.page - 1)}>Previous</Button><span>Page {pagination.page} of {pagination.totalPages}</span><Button variant="outline" size="sm" disabled={loading || pagination.page >= pagination.totalPages} onClick={() => void load(pagination.page + 1)}>Next</Button></div></div>
     </div>
-    <Dialog open={Boolean(selected)} onOpenChange={(open) => { if (!open) { setSelected(null); setActionMessage("") } }}><DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl"><DialogHeader><DialogTitle>{selected?.publicId}</DialogTitle><DialogDescription>{selected?.source === "rfq" ? `Created from ${selected.rfq?.publicId}` : "Direct customer order"}</DialogDescription></DialogHeader>{selected ? <div className="space-y-5"><div className="grid gap-2 rounded-lg border p-4 text-sm sm:grid-cols-2"><p><span className="text-brand-muted">Customer:</span> {buyerName(selected)}</p><p><span className="text-brand-muted">Payment:</span> <span className="capitalize">{selected.paymentStatus}</span></p><p><span className="text-brand-muted">Account phone:</span> {selected.buyer.phone || "-"}</p><p><span className="text-brand-muted">Recipient:</span> {selected.deliveryRecipientName || buyerName(selected)}</p><p><span className="text-brand-muted">Delivery phone:</span> {selected.deliveryPhone || selected.buyer.phone || "-"}</p><p className="sm:col-span-2"><span className="text-brand-muted">Delivery address:</span> {deliveryAddress(selected)}</p><p><span className="text-brand-muted">Total:</span> {money(selected.totalAmount)}</p><p><span className="text-brand-muted">Status:</span> <span className="capitalize">{selected.status}</span></p></div><div><h3 className="mb-2 font-semibold">Items</h3>{selected.items.map((item) => <div key={item.id} className="flex justify-between gap-4 border-t py-3 text-sm"><div><p>{item.partName}</p><p className="text-brand-muted">{item.partNumber || "No part number"}</p></div><div className="text-right"><p>Qty {item.quantity}</p><p className="font-semibold">{item.lineTotal === null ? "Included in quote" : money(item.lineTotal)}</p></div></div>)}</div><div className="space-y-3 rounded-lg border p-4"><h3 className="font-semibold">Order actions</h3>{selected.status === "pending" ? <Button disabled={actionPending || selected.paymentStatus !== "succeeded"} onClick={() => void confirmOrder()}>{actionPending ? "Confirming..." : "Confirm order"}</Button> : null}{["confirmed", "processing", "shipped"].includes(selected.status) ? <div className="space-y-3"><Input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setProofFile(event.target.files?.[0] ?? null)} /><Input placeholder="Recipient name (optional)" value={recipientName} onChange={(event) => setRecipientName(event.target.value)} /><Input placeholder="Delivery note (optional)" value={proofNote} onChange={(event) => setProofNote(event.target.value)} /><Button disabled={actionPending || !proofFile} onClick={() => void submitProof()}>{actionPending ? "Submitting..." : "Submit proof of delivery"}</Button><p className="text-xs text-brand-muted">JPG, PNG or WebP, maximum 5 MB. Submitting marks the order delivered.</p></div> : null}{selected.proofSubmittedAt ? <p className="text-sm text-emerald-500">POD submitted {new Date(selected.proofSubmittedAt).toLocaleString("en-AE")}{selected.proofRecipientName ? ` to ${selected.proofRecipientName}` : ""}.</p> : null}{actionMessage ? <p className="text-sm text-brand-muted">{actionMessage}</p> : null}</div></div> : null}</DialogContent></Dialog>
+    <Dialog open={Boolean(selected)} onOpenChange={(open) => { if (!open) { setSelected(null); setActionMessage(""); setBatchItemIds([]) } }}><DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-4xl"><DialogHeader><DialogTitle>{selected?.publicId}</DialogTitle><DialogDescription>{selected?.source === "rfq" ? `Created from ${selected.rfq?.publicId}` : "Direct customer order"}</DialogDescription></DialogHeader>{selected ? <div className="space-y-5"><div className="grid gap-2 rounded-lg border p-4 text-sm sm:grid-cols-2"><p><span className="text-brand-muted">Customer:</span> {buyerName(selected)}</p><p><span className="text-brand-muted">Payment:</span> <span className="capitalize">{selected.paymentStatus}</span></p><p><span className="text-brand-muted">Account phone:</span> {selected.buyer.phone || "-"}</p><p><span className="text-brand-muted">Recipient:</span> {selected.deliveryRecipientName || buyerName(selected)}</p><p><span className="text-brand-muted">Delivery phone:</span> {selected.deliveryPhone || selected.buyer.phone || "-"}</p><p className="sm:col-span-2"><span className="text-brand-muted">Delivery address:</span> {deliveryAddress(selected)}</p><p><span className="text-brand-muted">Total:</span> {money(selected.totalAmount)}</p><p><span className="text-brand-muted">Status:</span> <span className="capitalize">{selected.status}</span></p><div className="sm:col-span-2"><p className="text-brand-muted">Progress</p><div className="mt-2 h-2 rounded-full bg-muted"><div className="h-full rounded-full bg-primary" style={{ width: `${selected.deliveryProgress}%` }} /></div><p className="mt-1 text-xs text-brand-muted">{selected.deliveredItemCount} of {selected.totalItemCount} items delivered ({selected.deliveryProgress}%)</p></div></div><div><h3 className="mb-2 font-semibold">Items</h3>{selected.items.map((item) => <div key={item.id} className="grid gap-3 border-t py-3 text-sm md:grid-cols-[auto_1fr_auto]"><div className="pt-1">{["confirmed", "processing", "shipped"].includes(selected.status) && !item.deliveredAt ? <input type="checkbox" checked={batchItemIds.includes(item.id)} onChange={(event) => setBatchItemIds((current) => event.target.checked ? [...current, item.id] : current.filter((id) => id !== item.id))} aria-label={`Select ${item.partName} for delivery batch`} /> : null}</div><div><p>{item.partName}</p><p className="text-brand-muted">{item.partNumber || "No part number"} | Qty {item.quantity}</p><p className="mt-1 text-xs text-brand-muted">Delivery: {deliveryLabel(item.deliveryOption)}{item.expectedDeliveryAt ? ` | Expected ${new Date(item.expectedDeliveryAt).toLocaleDateString("en-AE")}` : ""}</p>{item.deliveredAt ? <p className="mt-1 text-xs text-emerald-500">Delivered {new Date(item.deliveredAt).toLocaleString("en-AE")}{item.proofRecipientName ? ` to ${item.proofRecipientName}` : ""}</p> : null}{item.proofOfDeliveryNote ? <p className="mt-1 text-xs text-brand-muted">{item.proofOfDeliveryNote}</p> : null}</div><div className="text-right"><p className="font-semibold">{item.lineTotal === null ? "Included in quote" : money(item.lineTotal)}</p>{item.proofOfDeliveryUrl ? <a className="mt-1 inline-block text-xs text-primary hover:underline" href={`/api/supplier/orders/${selected.id}/proof?itemId=${encodeURIComponent(item.id)}`} target="_blank" rel="noreferrer">View proof</a> : null}</div></div>)}</div><div className="space-y-3 rounded-lg border p-4"><h3 className="font-semibold">Order actions</h3>{selected.status === "pending" ? <Button disabled={actionPending || selected.paymentStatus !== "succeeded"} onClick={() => void confirmOrder()}>{actionPending ? "Accepting..." : "Accept order"}</Button> : null}{["confirmed", "processing", "shipped"].includes(selected.status) ? <div className="space-y-3"><p className="text-sm text-brand-muted">Select the items included in this delivery batch, upload proof, and submit. The order completes only after all items are delivered.</p><Input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setProofFile(event.target.files?.[0] ?? null)} /><Input placeholder="Recipient name (optional)" value={recipientName} onChange={(event) => setRecipientName(event.target.value)} /><Input placeholder="Delivery note (optional)" value={proofNote} onChange={(event) => setProofNote(event.target.value)} /><Button disabled={actionPending || !proofFile || !batchItemIds.length} onClick={() => void submitProof()}>{actionPending ? "Submitting..." : `Submit batch (${batchItemIds.length})`}</Button><p className="text-xs text-brand-muted">JPG, PNG or WebP, maximum 5 MB.</p></div> : null}{actionMessage ? <p className="text-sm text-brand-muted">{actionMessage}</p> : null}</div></div> : null}</DialogContent></Dialog>
   </div>
 }

@@ -3,6 +3,7 @@
 import {
   Bell,
   ChevronDown,
+  ExternalLink,
   LogOut,
   Search,
   User,
@@ -25,6 +26,7 @@ import { NotificationLiveListener } from "@/components/notification-live-listene
 import { NotificationPopup } from "@/components/notification-popup"
 import { logoutDashboard } from "@/lib/auth/client"
 import { getDashboardUserName, type DashboardUser } from "@/lib/auth/types"
+import { mainWebsiteUrl } from "@/lib/main-website-url"
 import { appRoutes } from "@/lib/routes"
 
 export function DashboardHeader({ user }: { user: DashboardUser }) {
@@ -119,6 +121,19 @@ export function DashboardHeader({ user }: { user: DashboardUser }) {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            asChild
+            aria-label="Open main website"
+            title="Main website"
+            className="text-brand-muted hover:bg-muted hover:text-foreground"
+          >
+            <a href={mainWebsiteUrl()}>
+              <ExternalLink className="h-5 w-5" />
+            </a>
+          </Button>
         </div>
       </div>
     </header>

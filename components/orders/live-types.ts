@@ -3,6 +3,9 @@ export type LiveOrder = {
   publicId: string
   source: "rfq" | "direct"
   totalAmount: number
+  deliveryProgress: number
+  deliveredItemCount: number
+  totalItemCount: number
   status: "pending" | "confirmed" | "processing" | "shipped" | "delivered" | "cancelled"
   paymentStatus: "pending" | "succeeded" | "failed" | "refunded"
   paidAt: string | null
@@ -44,6 +47,13 @@ export type LiveOrder = {
     quantity: number
     unitPrice: number | null
     lineTotal: number | null
+    deliveryOption: string | null
+    expectedDeliveryAt: string | null
+    deliveredAt: string | null
+    proofOfDeliveryUrl: string | null
+    proofOfDeliveryNote: string | null
+    proofRecipientName: string | null
+    proofSubmittedAt: string | null
   }>
   rfq: {
     publicId: string
