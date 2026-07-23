@@ -10,6 +10,19 @@ import type { AuthApiPayload } from "@/lib/auth/types"
 
 export const dynamic = "force-dynamic"
 
+async function readBackendJson(response: Response): Promise<AuthApiPayload | null> {
+  const contentType = response.headers.get("content-type") ?? ""
+  if (!contentType.toLowerCase().includes("application/json")) {
+    return null
+  }
+
+  try {
+    return (await response.json()) as AuthApiPayload
+  } catch {
+    return null
+  }
+}
+
 const getFirebaseUidFromToken = (token: string): string | null => {
   try {
     const [, payload] = token.split(".")
@@ -70,8 +83,20 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     contentType: "application/json",
     userAgent: request.headers.get("user-agent"),
   })
-  const payload = (await backendResponse.json()) as AuthApiPayload
+  const payload = await readBackendJson(backendResponse)
   const issuedCookies = getSetCookieHeaders(backendResponse.headers)
+
+  if (!payload) {
+    return NextResponse.json(
+      {
+        ok: false,
+        success: false,
+        message:
+          "Backend login endpoint did not return JSON. Check ADMIN_API_BASE_URL points to auto_parts_admin.",
+      },
+      { status: 502 },
+    )
+  }
 
   if (
     backendResponse.ok &&

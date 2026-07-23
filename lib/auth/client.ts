@@ -1,11 +1,12 @@
 import { signOutFirebaseUser } from "@/lib/auth/firebase-client"
+import { appPath } from "@/lib/routes"
 
 const AUTH_API_PATH = "/api/auth"
 let refreshRequest: Promise<boolean> | null = null
 
 export async function refreshDashboardSession(): Promise<boolean> {
   if (!refreshRequest) {
-    refreshRequest = fetch(`${AUTH_API_PATH}/refresh`, {
+    refreshRequest = fetch(appPath(`${AUTH_API_PATH}/refresh`), {
       method: "POST",
       credentials: "include",
       cache: "no-store",
@@ -38,7 +39,7 @@ export async function authenticatedFetch(
 
 export async function logoutDashboard(): Promise<void> {
   await Promise.allSettled([
-    fetch(`${AUTH_API_PATH}/logout`, {
+    fetch(appPath(`${AUTH_API_PATH}/logout`), {
       method: "POST",
       credentials: "include",
       cache: "no-store",

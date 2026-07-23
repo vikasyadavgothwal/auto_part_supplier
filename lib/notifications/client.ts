@@ -1,6 +1,7 @@
 "use client"
 
 import { authenticatedFetch } from "@/lib/auth/client"
+import { appPath } from "@/lib/routes"
 
 export type DashboardNotification = {
   id: string
@@ -15,10 +16,10 @@ export type DashboardNotification = {
   updatedAt: string
 }
 
-export const notificationsApiPath = "/api/notifications"
-export const notificationsStreamPath = "/api/notifications/stream"
-export const notificationsReadAllPath = "/api/notifications/read-all"
+export const notificationsApiPath = appPath("/api/notifications")
+export const notificationsStreamPath = appPath("/api/notifications/stream")
+export const notificationsReadAllPath = appPath("/api/notifications/read-all")
 export const notificationReadPath = (id: string) =>
-  `/api/notifications/${encodeURIComponent(id)}/read`
+  appPath(`/api/notifications/${encodeURIComponent(id)}/read`)
 export const notificationHref = (path: string) => path
 export const notificationFetch = authenticatedFetch

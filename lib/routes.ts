@@ -1,4 +1,4 @@
-const DEFAULT_BASE_PATH = "/dashboard"
+const DEFAULT_BASE_PATH = ""
 
 function normalizeBasePath(value?: string) {
   if (!value) {
@@ -27,6 +27,10 @@ export function stripBasePath(pathname: string | null) {
     return appRoutes.dashboard
   }
 
+  if (!appBasePath) {
+    return pathname
+  }
+
   if (pathname === appBasePath || pathname === `${appBasePath}/`) {
     return appRoutes.dashboard
   }
@@ -36,4 +40,14 @@ export function stripBasePath(pathname: string | null) {
   }
 
   return pathname
+}
+
+export function appPath(path: string) {
+  if (!appBasePath) {
+    return path.startsWith("/") ? path : `/${path}`
+  }
+  if (!path.startsWith("/")) {
+    return `${appBasePath}/${path}`
+  }
+  return `${appBasePath}${path === "/" ? "" : path}`
 }

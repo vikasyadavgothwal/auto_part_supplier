@@ -16,7 +16,8 @@ const expiresSoon = (token: string) => {
 export function proxy(request: NextRequest) {
   if (request.method !== "GET" || !request.headers.get("accept")?.includes("text/html")) return NextResponse.next()
   const pathname = request.nextUrl.pathname
-  if (pathname.includes("/api/") || pathname.endsWith("/login") || pathname.includes("/_next/")) return NextResponse.next()
+  if (pathname.includes("/api/") || pathname.includes("/_next/")) return NextResponse.next()
+  if (pathname.endsWith("/login")) return NextResponse.next()
   const refresh = request.cookies.get(refreshCookie)?.value
   const access = request.cookies.get(accessCookie)?.value
   if (!refresh || (access && !expiresSoon(access))) return NextResponse.next()

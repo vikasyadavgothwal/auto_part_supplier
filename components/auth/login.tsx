@@ -20,7 +20,7 @@ import {
   isFirebaseAuthConfigured,
 } from "@/lib/auth/firebase-client"
 import type { AuthApiPayload } from "@/lib/auth/types"
-import { appRoutes } from "@/lib/routes"
+import { appPath, appRoutes } from "@/lib/routes"
 
 function getLoginError(error: unknown): string {
   if (error instanceof FirebaseError) {
@@ -56,7 +56,7 @@ export function LoginForm() {
             password,
             deviceName: "Supplier dashboard",
           }
-      const response = await fetch("/api/auth/login", {
+      const response = await fetch(appPath("/api/auth/login"), {
         method: "POST",
         credentials: "include",
         headers: { "content-type": "application/json" },
