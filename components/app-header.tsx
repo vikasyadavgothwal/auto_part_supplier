@@ -9,7 +9,6 @@ import {
   User,
 } from "lucide-react"
 import { useState } from "react"
-import { useRouter } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -27,10 +26,8 @@ import { NotificationPopup } from "@/components/notification-popup"
 import { logoutDashboard } from "@/lib/auth/client"
 import { getDashboardUserName, type DashboardUser } from "@/lib/auth/types"
 import { mainWebsiteUrl } from "@/lib/main-website-url"
-import { appRoutes } from "@/lib/routes"
 
 export function DashboardHeader({ user }: { user: DashboardUser }) {
-  const router = useRouter()
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [unreadNotifications, setUnreadNotifications] = useState(0)
   const displayName = getDashboardUserName(user)
@@ -38,8 +35,7 @@ export function DashboardHeader({ user }: { user: DashboardUser }) {
   const handleLogout = async () => {
     setIsLoggingOut(true)
     await logoutDashboard()
-    router.replace(appRoutes.login)
-    router.refresh()
+    window.location.assign(mainWebsiteUrl())
   }
 
   return (
