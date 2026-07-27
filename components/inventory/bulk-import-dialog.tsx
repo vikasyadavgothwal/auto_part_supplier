@@ -170,9 +170,6 @@ export function BulkImportDialog({
                 <p className="mt-1 text-sm text-brand-muted">
                   {summary.mappedCount} product{summary.mappedCount === 1 ? "" : "s"} mapped
                   and {summary.unmappedCount} product{summary.unmappedCount === 1 ? "" : "s"} not mapped.
-                  Stock updated for{" "}
-                  {summary.stockUpdatedCount ?? 0} rows and pricing updated for{" "}
-                  {summary.pricingUpdatedCount ?? 0} rows.
                 </p>
               </div>
             </div>
