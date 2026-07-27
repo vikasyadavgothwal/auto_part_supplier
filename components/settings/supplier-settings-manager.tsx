@@ -256,16 +256,8 @@ export function SupplierSettingsManager({
     if (!isHttpUrl(form.tradeLicenseImageUrl.trim())) {
       return "Enter a valid trade license image URL"
     }
-    if (!form.vatTrnNumber.trim()) return "VAT TRN number is required"
-    if (!isHttpUrl(form.vatTrnImageUrl.trim())) {
-      return "Enter a valid VAT TRN image URL"
-    }
     if (!isHttpUrl(form.emiratesIdPassportUrl.trim())) {
       return "Enter a valid Emirates ID or passport document URL"
-    }
-    if (!form.bankIban.trim()) return "Bank IBAN is required"
-    if (!isHttpUrl(form.bankAccountProofUrl.trim())) {
-      return "Enter a valid bank account proof URL"
     }
     if (!form.marketplaceAgreementAccepted) {
       return "Accept the marketplace agreement before saving"
@@ -674,17 +666,6 @@ export function SupplierSettingsManager({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="vat-trn-number">VAT TRN Number</Label>
-            <Input
-              id="vat-trn-number"
-              value={form.vatTrnNumber}
-              onChange={(event) => setField("vatTrnNumber", event.target.value)}
-              className="border-border bg-brand-surface"
-              required
-            />
-          </div>
-
-          <div className="space-y-2 md:col-span-2">
             <Label htmlFor="trade-license-image-url">
               Trade License Image URL
             </Label>
@@ -703,20 +684,6 @@ export function SupplierSettingsManager({
           </div>
 
           <div className="space-y-2 md:col-span-2">
-            <Label htmlFor="vat-trn-image-url">VAT TRN Image URL</Label>
-            <Input
-              id="vat-trn-image-url"
-              type="url"
-              inputMode="url"
-              value={form.vatTrnImageUrl}
-              onChange={(event) => setField("vatTrnImageUrl", event.target.value)}
-              placeholder="https://example.com/vat-certificate.jpg"
-              className="border-border bg-brand-surface"
-              required
-            />
-          </div>
-
-          <div className="space-y-2 md:col-span-2">
             <Label htmlFor="emirates-id-passport-url">
               Emirates ID / Passport Document URL
             </Label>
@@ -729,35 +696,6 @@ export function SupplierSettingsManager({
                 setField("emiratesIdPassportUrl", event.target.value)
               }
               placeholder="https://example.com/emirates-id-or-passport.jpg"
-              className="border-border bg-brand-surface"
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="bank-iban">Bank Account IBAN</Label>
-            <Input
-              id="bank-iban"
-              value={form.bankIban}
-              onChange={(event) => setField("bankIban", event.target.value)}
-              className="border-border bg-brand-surface"
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="bank-account-proof-url">
-              Bank Account Proof URL
-            </Label>
-            <Input
-              id="bank-account-proof-url"
-              type="url"
-              inputMode="url"
-              value={form.bankAccountProofUrl}
-              onChange={(event) =>
-                setField("bankAccountProofUrl", event.target.value)
-              }
-              placeholder="https://example.com/bank-proof.jpg"
               className="border-border bg-brand-surface"
               required
             />
