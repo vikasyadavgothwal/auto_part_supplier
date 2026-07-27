@@ -14,6 +14,10 @@ export type SupplierProfileRecord = {
   tradeLicenseImageUrl: string | null
   vatTrnNumber: string | null
   vatTrnImageUrl: string | null
+  emiratesIdPassportUrl: string | null
+  bankIban: string | null
+  bankAccountProofUrl: string | null
+  marketplaceAgreementAcceptedAt: string | null
   mobileVerifiedAt: string | null
   avatarUrl: string | null
   addressLine1: string | null
@@ -39,6 +43,10 @@ export type SupplierProfileFormValues = {
   tradeLicenseImageUrl: string
   vatTrnNumber: string
   vatTrnImageUrl: string
+  emiratesIdPassportUrl: string
+  bankIban: string
+  bankAccountProofUrl: string
+  marketplaceAgreementAccepted: boolean
   addressLine1: string
   addressLine2: string
   city: string
@@ -63,6 +71,10 @@ export const emptySupplierProfile: SupplierProfileRecord = {
   tradeLicenseImageUrl: null,
   vatTrnNumber: null,
   vatTrnImageUrl: null,
+  emiratesIdPassportUrl: null,
+  bankIban: null,
+  bankAccountProofUrl: null,
+  marketplaceAgreementAcceptedAt: null,
   mobileVerifiedAt: null,
   avatarUrl: null,
   addressLine1: null,
@@ -90,6 +102,12 @@ export const formFromSupplierProfile = (
   tradeLicenseImageUrl: profile.tradeLicenseImageUrl ?? "",
   vatTrnNumber: profile.vatTrnNumber ?? "",
   vatTrnImageUrl: profile.vatTrnImageUrl ?? "",
+  emiratesIdPassportUrl: profile.emiratesIdPassportUrl ?? "",
+  bankIban: profile.bankIban ?? "",
+  bankAccountProofUrl: profile.bankAccountProofUrl ?? "",
+  marketplaceAgreementAccepted: Boolean(
+    profile.marketplaceAgreementAcceptedAt,
+  ),
   addressLine1: profile.addressLine1 ?? "",
   addressLine2: profile.addressLine2 ?? "",
   city: profile.city ?? "",
@@ -110,6 +128,10 @@ export const payloadFromSupplierForm = (form: SupplierProfileFormValues) => ({
   tradeLicenseImageUrl: form.tradeLicenseImageUrl.trim(),
   vatTrnNumber: form.vatTrnNumber.trim(),
   vatTrnImageUrl: form.vatTrnImageUrl.trim(),
+  emiratesIdPassportUrl: form.emiratesIdPassportUrl.trim(),
+  bankIban: form.bankIban.trim(),
+  bankAccountProofUrl: form.bankAccountProofUrl.trim(),
+  marketplaceAgreementAccepted: form.marketplaceAgreementAccepted,
   addressLine1: form.addressLine1.trim(),
   addressLine2: form.addressLine2.trim(),
   city: form.city.trim(),

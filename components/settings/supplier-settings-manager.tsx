@@ -19,6 +19,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { authenticatedFetch } from "@/lib/auth/client"
@@ -258,6 +259,16 @@ export function SupplierSettingsManager({
     if (!form.vatTrnNumber.trim()) return "VAT TRN number is required"
     if (!isHttpUrl(form.vatTrnImageUrl.trim())) {
       return "Enter a valid VAT TRN image URL"
+    }
+    if (!isHttpUrl(form.emiratesIdPassportUrl.trim())) {
+      return "Enter a valid Emirates ID or passport document URL"
+    }
+    if (!form.bankIban.trim()) return "Bank IBAN is required"
+    if (!isHttpUrl(form.bankAccountProofUrl.trim())) {
+      return "Enter a valid bank account proof URL"
+    }
+    if (!form.marketplaceAgreementAccepted) {
+      return "Accept the marketplace agreement before saving"
     }
     return ""
   }
@@ -623,7 +634,7 @@ export function SupplierSettingsManager({
       <Card className="rounded-sm border border-border bg-brand-panel shadow-none">
         <CardHeader>
           <CardTitle className="text-foreground">
-            Trade License & VAT Details
+            Verification Documents
           </CardTitle>
         </CardHeader>
         <CardContent className="grid gap-6 md:grid-cols-2">
@@ -703,6 +714,69 @@ export function SupplierSettingsManager({
               className="border-border bg-brand-surface"
               required
             />
+          </div>
+
+          <div className="space-y-2 md:col-span-2">
+            <Label htmlFor="emirates-id-passport-url">
+              Emirates ID / Passport Document URL
+            </Label>
+            <Input
+              id="emirates-id-passport-url"
+              type="url"
+              inputMode="url"
+              value={form.emiratesIdPassportUrl}
+              onChange={(event) =>
+                setField("emiratesIdPassportUrl", event.target.value)
+              }
+              placeholder="https://example.com/emirates-id-or-passport.jpg"
+              className="border-border bg-brand-surface"
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="bank-iban">Bank Account IBAN</Label>
+            <Input
+              id="bank-iban"
+              value={form.bankIban}
+              onChange={(event) => setField("bankIban", event.target.value)}
+              className="border-border bg-brand-surface"
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="bank-account-proof-url">
+              Bank Account Proof URL
+            </Label>
+            <Input
+              id="bank-account-proof-url"
+              type="url"
+              inputMode="url"
+              value={form.bankAccountProofUrl}
+              onChange={(event) =>
+                setField("bankAccountProofUrl", event.target.value)
+              }
+              placeholder="https://example.com/bank-proof.jpg"
+              className="border-border bg-brand-surface"
+              required
+            />
+          </div>
+
+          <div className="flex items-start gap-3 md:col-span-2">
+            <Checkbox
+              id="marketplace-agreement"
+              checked={form.marketplaceAgreementAccepted}
+              onCheckedChange={(checked) =>
+                setField("marketplaceAgreementAccepted", checked === true)
+              }
+            />
+            <Label
+              htmlFor="marketplace-agreement"
+              className="leading-relaxed text-muted-foreground"
+            >
+              I accept the Marketplace Agreement
+            </Label>
           </div>
         </CardContent>
       </Card>
