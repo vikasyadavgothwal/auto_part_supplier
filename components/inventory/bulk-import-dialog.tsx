@@ -168,9 +168,9 @@ export function BulkImportDialog({
                   Workbook processed
                 </p>
                 <p className="mt-1 text-sm text-brand-muted">
-                  {summary.mappedCount} rows processed: {summary.localMappedCount}
-                  {" "}matched locally, {summary.vin17MappedCount} matched through
-                  VIN, {summary.unmappedCount} failed. Stock updated for{" "}
+                  {summary.mappedCount} product{summary.mappedCount === 1 ? "" : "s"} mapped
+                  and {summary.unmappedCount} product{summary.unmappedCount === 1 ? "" : "s"} not mapped.
+                  Stock updated for{" "}
                   {summary.stockUpdatedCount ?? 0} rows and pricing updated for{" "}
                   {summary.pricingUpdatedCount ?? 0} rows.
                 </p>
