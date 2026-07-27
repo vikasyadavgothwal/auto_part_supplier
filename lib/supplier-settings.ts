@@ -15,6 +15,8 @@ export type SupplierProfileRecord = {
   vatTrnNumber: string | null
   vatTrnImageUrl: string | null
   emiratesIdPassportUrl: string | null
+  bankIban: string | null
+  bankAccountProofUrl: string | null
   marketplaceAgreementAcceptedAt: string | null
   mobileVerifiedAt: string | null
   avatarUrl: string | null
@@ -39,7 +41,11 @@ export type SupplierProfileFormValues = {
   contactPerson: string
   designation: string
   tradeLicenseImageUrl: string
+  vatTrnNumber: string
+  vatTrnImageUrl: string
   emiratesIdPassportUrl: string
+  bankIban: string
+  bankAccountProofUrl: string
   marketplaceAgreementAccepted: boolean
   addressLine1: string
   addressLine2: string
@@ -66,6 +72,8 @@ export const emptySupplierProfile: SupplierProfileRecord = {
   vatTrnNumber: null,
   vatTrnImageUrl: null,
   emiratesIdPassportUrl: null,
+  bankIban: null,
+  bankAccountProofUrl: null,
   marketplaceAgreementAcceptedAt: null,
   mobileVerifiedAt: null,
   avatarUrl: null,
@@ -92,7 +100,11 @@ export const formFromSupplierProfile = (
   contactPerson: profile.contactPerson ?? "",
   designation: profile.designation ?? "",
   tradeLicenseImageUrl: profile.tradeLicenseImageUrl ?? "",
+  vatTrnNumber: profile.vatTrnNumber ?? "",
+  vatTrnImageUrl: profile.vatTrnImageUrl ?? "",
   emiratesIdPassportUrl: profile.emiratesIdPassportUrl ?? "",
+  bankIban: profile.bankIban ?? "",
+  bankAccountProofUrl: profile.bankAccountProofUrl ?? "",
   marketplaceAgreementAccepted: Boolean(
     profile.marketplaceAgreementAcceptedAt,
   ),
@@ -114,7 +126,11 @@ export const payloadFromSupplierForm = (form: SupplierProfileFormValues) => ({
   contactPerson: form.contactPerson.trim(),
   designation: form.designation.trim(),
   tradeLicenseImageUrl: form.tradeLicenseImageUrl.trim(),
+  vatTrnNumber: form.vatTrnNumber.trim(),
+  vatTrnImageUrl: form.vatTrnImageUrl.trim(),
   emiratesIdPassportUrl: form.emiratesIdPassportUrl.trim(),
+  bankIban: form.bankIban.trim(),
+  bankAccountProofUrl: form.bankAccountProofUrl.trim(),
   marketplaceAgreementAccepted: form.marketplaceAgreementAccepted,
   addressLine1: form.addressLine1.trim(),
   addressLine2: form.addressLine2.trim(),
