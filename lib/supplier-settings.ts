@@ -11,10 +11,16 @@ export type SupplierProfileRecord = {
   tradeLicenseNumber: string | null
   contactPerson: string | null
   designation: string | null
+  supplierContactPhone: string | null
+  supplierContactPhoneVerifiedAt: string | null
   tradeLicenseImageUrl: string | null
   vatTrnNumber: string | null
   vatTrnImageUrl: string | null
+  supplierIdentityDocumentType: string | null
   emiratesIdPassportUrl: string | null
+  emiratesIdBackUrl: string | null
+  passportAddressUrl: string | null
+  passportVisaFrontUrl: string | null
   bankIban: string | null
   bankAccountProofUrl: string | null
   marketplaceAgreementAcceptedAt: string | null
@@ -27,6 +33,7 @@ export type SupplierProfileRecord = {
   postalCode: string | null
   country: string | null
   supplierApprovalStatus: string
+  supplierApprovalRejectionReason: string | null
   createdAt: string
   updatedAt: string
 }
@@ -40,10 +47,15 @@ export type SupplierProfileFormValues = {
   tradeLicenseNumber: string
   contactPerson: string
   designation: string
+  supplierContactPhone: string
   tradeLicenseImageUrl: string
   vatTrnNumber: string
   vatTrnImageUrl: string
+  supplierIdentityDocumentType: string
   emiratesIdPassportUrl: string
+  emiratesIdBackUrl: string
+  passportAddressUrl: string
+  passportVisaFrontUrl: string
   bankIban: string
   bankAccountProofUrl: string
   marketplaceAgreementAccepted: boolean
@@ -68,10 +80,16 @@ export const emptySupplierProfile: SupplierProfileRecord = {
   tradeLicenseNumber: null,
   contactPerson: null,
   designation: null,
+  supplierContactPhone: null,
+  supplierContactPhoneVerifiedAt: null,
   tradeLicenseImageUrl: null,
   vatTrnNumber: null,
   vatTrnImageUrl: null,
+  supplierIdentityDocumentType: null,
   emiratesIdPassportUrl: null,
+  emiratesIdBackUrl: null,
+  passportAddressUrl: null,
+  passportVisaFrontUrl: null,
   bankIban: null,
   bankAccountProofUrl: null,
   marketplaceAgreementAcceptedAt: null,
@@ -84,9 +102,28 @@ export const emptySupplierProfile: SupplierProfileRecord = {
   postalCode: null,
   country: null,
   supplierApprovalStatus: "Pending",
+  supplierApprovalRejectionReason: null,
   createdAt: "",
   updatedAt: "",
 }
+
+export const supplierHasSubmittedDocuments = (
+  profile: SupplierProfileRecord,
+) =>
+  Boolean(
+    profile.tradeLicenseNumber &&
+      profile.tradeLicenseImageUrl &&
+      profile.vatTrnNumber &&
+      profile.vatTrnImageUrl &&
+      profile.supplierIdentityDocumentType &&
+      profile.emiratesIdPassportUrl &&
+      profile.bankIban &&
+      profile.bankAccountProofUrl &&
+      profile.marketplaceAgreementAcceptedAt,
+  )
+
+export const supplierCanAccessDashboard = (profile: SupplierProfileRecord) =>
+  profile.supplierApprovalStatus === "Approved"
 
 export const formFromSupplierProfile = (
   profile: SupplierProfileRecord,
@@ -99,10 +136,16 @@ export const formFromSupplierProfile = (
   tradeLicenseNumber: profile.tradeLicenseNumber ?? "",
   contactPerson: profile.contactPerson ?? "",
   designation: profile.designation ?? "",
+  supplierContactPhone: profile.supplierContactPhone ?? "",
   tradeLicenseImageUrl: profile.tradeLicenseImageUrl ?? "",
   vatTrnNumber: profile.vatTrnNumber ?? "",
   vatTrnImageUrl: profile.vatTrnImageUrl ?? "",
+  supplierIdentityDocumentType:
+    profile.supplierIdentityDocumentType ?? "emirates_id",
   emiratesIdPassportUrl: profile.emiratesIdPassportUrl ?? "",
+  emiratesIdBackUrl: profile.emiratesIdBackUrl ?? "",
+  passportAddressUrl: profile.passportAddressUrl ?? "",
+  passportVisaFrontUrl: profile.passportVisaFrontUrl ?? "",
   bankIban: profile.bankIban ?? "",
   bankAccountProofUrl: profile.bankAccountProofUrl ?? "",
   marketplaceAgreementAccepted: Boolean(
@@ -125,10 +168,15 @@ export const payloadFromSupplierForm = (form: SupplierProfileFormValues) => ({
   tradeLicenseNumber: form.tradeLicenseNumber.trim(),
   contactPerson: form.contactPerson.trim(),
   designation: form.designation.trim(),
+  supplierContactPhone: form.supplierContactPhone.trim(),
   tradeLicenseImageUrl: form.tradeLicenseImageUrl.trim(),
   vatTrnNumber: form.vatTrnNumber.trim(),
   vatTrnImageUrl: form.vatTrnImageUrl.trim(),
+  supplierIdentityDocumentType: form.supplierIdentityDocumentType.trim(),
   emiratesIdPassportUrl: form.emiratesIdPassportUrl.trim(),
+  emiratesIdBackUrl: form.emiratesIdBackUrl.trim(),
+  passportAddressUrl: form.passportAddressUrl.trim(),
+  passportVisaFrontUrl: form.passportVisaFrontUrl.trim(),
   bankIban: form.bankIban.trim(),
   bankAccountProofUrl: form.bankAccountProofUrl.trim(),
   marketplaceAgreementAccepted: form.marketplaceAgreementAccepted,

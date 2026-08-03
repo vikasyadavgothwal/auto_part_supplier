@@ -10,6 +10,9 @@ const BACKEND_ACCESS_COOKIE = process.env.USER_ACCESS_COOKIE_NAME ?? "user_acces
 const BACKEND_REFRESH_COOKIE = process.env.USER_REFRESH_COOKIE_NAME ?? "user_refresh_token"
 export const SUPPLIER_ACCESS_COOKIE = "supplier_access_token"
 export const SUPPLIER_REFRESH_COOKIE = "supplier_refresh_token"
+const DEFAULT_BACKEND_TIMEOUT_MS = 10_000
+
+const timeoutSignal = () => AbortSignal.timeout(DEFAULT_BACKEND_TIMEOUT_MS)
 
 const parseCookieHeader = (header: string | null) => {
   const cookies = new Map<string, string>()
@@ -128,6 +131,7 @@ export async function requestBackend(
     cache: "no-store",
     headers,
     body: options.body,
+    signal: timeoutSignal(),
   })
 }
 
@@ -146,6 +150,7 @@ export async function forwardBackendRequest(request: Request, path: string) {
     cache: "no-store",
     headers,
     body: method === "GET" || method === "HEAD" ? undefined : await request.arrayBuffer(),
+    signal: timeoutSignal(),
   })
   return new Response(await response.arrayBuffer(), {
     status: response.status,

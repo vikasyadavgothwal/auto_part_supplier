@@ -107,9 +107,6 @@ export function RfqInboxPageContent({ initialRfqs, initialPagination }: { initia
             </p>
           </div>
 
-          <Button className="h-12 px-6 hover:bg-brand-primary-hover">
-            Bulk Quote
-          </Button>
         </div>
 
         <SummaryStatGrid stats={rfqStats} />

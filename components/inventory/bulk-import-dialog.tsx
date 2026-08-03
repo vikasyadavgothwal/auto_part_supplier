@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { useToast } from "@/components/ui/toast-provider"
 import { authenticatedFetch } from "@/lib/auth/client"
 import { appBasePath } from "@/lib/routes"
 
@@ -56,6 +57,7 @@ export function BulkImportDialog({
   onOpenChange,
   onProductsImported,
 }: BulkImportDialogProps) {
+  const { showToast } = useToast()
   const [isUploading, setIsUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [summary, setSummary] = useState<ProductBulkUploadSummary | null>(null)
@@ -65,8 +67,10 @@ export function BulkImportDialog({
     const formData = new FormData(event.currentTarget)
     const workbook = formData.get("workbookFile")
     if (!(workbook instanceof File) || workbook.size === 0) {
-      setError("Select a completed Product Master XLSX workbook.")
+      const message = "Select a completed Product Master XLSX workbook."
+      setError(message)
       setSummary(null)
+      showToast({ type: "error", title: "Validation Error", message })
       return
     }
 
@@ -84,15 +88,21 @@ export function BulkImportDialog({
       }
       const nextSummary = payload.summary as ProductBulkUploadSummary
       setSummary(nextSummary)
+      showToast({
+        type: "success",
+        title: "Workbook Processed",
+        message: `${nextSummary.mappedCount} product${nextSummary.mappedCount === 1 ? "" : "s"} mapped and ${nextSummary.unmappedCount} product${nextSummary.unmappedCount === 1 ? "" : "s"} not mapped.`,
+      })
       onProductsImported(
         nextSummary.mappedParts.map(mapSupplierPartToProduct),
       )
     } catch (uploadError) {
-      setError(
+      const message =
         uploadError instanceof Error
           ? uploadError.message
-          : "Unable to process the workbook",
-      )
+          : "Unable to process the workbook"
+      setError(message)
+      showToast({ type: "error", title: "Upload Error", message })
     } finally {
       setIsUploading(false)
     }
@@ -135,7 +145,7 @@ export function BulkImportDialog({
           </div>
         </div>
 
-        <form className="space-y-4" onSubmit={handleSubmit}>
+        <form className="space-y-4" onSubmit={handleSubmit} noValidate>
           <div className="space-y-2">
             <Label htmlFor="product-master-workbook">Product Master file</Label>
             <Input
@@ -143,7 +153,6 @@ export function BulkImportDialog({
               name="workbookFile"
               type="file"
               accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-              required
             />
           </div>
           <Button type="submit" disabled={isUploading} className="w-full">

@@ -73,6 +73,67 @@ const rawObject = (product?: Product | null) =>
   product?.rawUploadData && typeof product.rawUploadData === "object" && !Array.isArray(product.rawUploadData)
     ? product.rawUploadData as Record<string, unknown> : {}
 
+const requiredFields = groups.flatMap((group) =>
+  group.fields.filter((field) => field.required).map((field) => field.key),
+)
+
+const numberFields = new Set(
+  groups.flatMap((group) =>
+    group.fields.filter((field) => field.type === "number").map((field) => field.key),
+  ),
+)
+
+const validateUrl = (value: string, label: string) => {
+  if (!value) return ""
+  try {
+    const url = new URL(value)
+    return url.protocol === "http:" || url.protocol === "https:"
+      ? ""
+      : `${label} must be a valid http or https URL`
+  } catch {
+    return `${label} must be a valid URL`
+  }
+}
+
+const validateFormData = (data: FormData) => {
+  const get = (key: string) => String(data.get(key) ?? "").trim()
+  for (const key of requiredFields) {
+    if (!get(key)) return `${key} is required`
+  }
+  for (const key of numberFields) {
+    const value = get(key)
+    if (!value) continue
+    const number = Number(value)
+    if (!Number.isFinite(number) || number < 0) {
+      return `${key} must be a valid non-negative number`
+    }
+  }
+  const basePrice = Number(get("Product Pricing | Base Price (AED)"))
+  if (!Number.isFinite(basePrice) || basePrice <= 0) {
+    return "Product Pricing | Base Price (AED) must be greater than 0"
+  }
+  const quantity = Number(get("Product Inventory | Quantity"))
+  if (!Number.isInteger(quantity) || quantity < 0) {
+    return "Product Inventory | Quantity must be a whole number"
+  }
+  const yearStart = get("Vehicle Fitment | Year_Start")
+  const yearEnd = get("Vehicle Fitment | Year_End")
+  if (yearStart && yearEnd && Number(yearEnd) < Number(yearStart)) {
+    return "Vehicle Fitment | Year_End must be after Year_Start"
+  }
+  const primaryUrlError = validateUrl(
+    get("Product Images | Primary Image URL"),
+    "Product Images | Primary Image URL",
+  )
+  if (primaryUrlError) return primaryUrlError
+  const documentUrlError = validateUrl(
+    get("Product Documents | Document URL"),
+    "Product Documents | Document URL",
+  )
+  if (documentUrlError) return documentUrlError
+  return ""
+}
+
 export function ProductMasterForm({ open, onOpenChange, product, onSaved }: {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -96,6 +157,11 @@ export function ProductMasterForm({ open, onOpenChange, product, onSaved }: {
     const form = event.currentTarget
     const data = new FormData(form)
     const get = (key: string) => String(data.get(key) ?? "").trim()
+    const validationError = validateFormData(data)
+    if (validationError) {
+      setError(validationError)
+      return
+    }
     setIsSaving(true); setError("")
     try {
       let storedUrls = product?.imageUrls ?? []
@@ -127,9 +193,13 @@ export function ProductMasterForm({ open, onOpenChange, product, onSaved }: {
       const response = await authenticatedFetch(product?.id ? `/api/supplier/parts/${product.id}` : "/api/supplier/parts", { method: product?.id ? "PATCH" : "POST", headers:{"content-type":"application/json"}, body:JSON.stringify(payload) })
       const result = await response.json() as SupplierPartCreateResponse
       if (!response.ok || !result.ok || !result.part) throw new Error(result.message ?? "Unable to save product")
-      onSaved(result.part, result.part.mappingStatus === "mapped" ? "Product saved and mapped successfully." : "Product saved for review because no exact local or 17VIN match was found.")
+      const message = result.part.mappingStatus === "mapped" ? "Product saved and mapped successfully." : "Product saved for review because no exact local or 17VIN match was found."
+      onSaved(result.part, message)
       onOpenChange(false)
-    } catch (cause) { setError(cause instanceof Error ? cause.message : "Unable to save product") }
+    } catch (cause) {
+      const message = cause instanceof Error ? cause.message : "Unable to save product"
+      setError(message)
+    }
     finally { setIsSaving(false) }
   }
 
@@ -139,7 +209,7 @@ export function ProductMasterForm({ open, onOpenChange, product, onSaved }: {
         <DialogTitle>{product ? "Edit Product Master" : "Add Single Product"}</DialogTitle>
         <DialogDescription>Enter the same information available in the Product Master Excel. Mapping-sensitive changes are checked again automatically.</DialogDescription>
       </DialogHeader>
-      <form className="flex min-h-0 flex-col" onSubmit={submit}>
+      <form className="flex min-h-0 flex-col" onSubmit={submit} noValidate>
         <div className="max-h-[72vh] space-y-6 overflow-y-auto px-5 py-5 sm:px-7">
           {error ? <div className="flex gap-2 rounded-sm border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive"><TriangleAlert className="size-4 shrink-0" />{error}</div> : null}
           <div className="rounded-sm border border-primary/20 bg-primary/5 p-4 text-sm text-brand-muted">
@@ -150,7 +220,7 @@ export function ProductMasterForm({ open, onOpenChange, product, onSaved }: {
             <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {group.fields.map((field) => <div key={field.key} className={`min-w-0 space-y-2 ${field.wide ? "sm:col-span-2 lg:col-span-3" : ""}`}>
                 <Label htmlFor={`pm-${field.key}`}>{field.label ?? field.key}{field.required ? " *" : ""}</Label>
-                {field.type === "textarea" ? <textarea id={`pm-${field.key}`} name={field.key} defaultValue={value(field.key, fallback[field.key])} className="min-h-24 w-full rounded-sm border border-input bg-transparent px-3 py-2 text-sm outline-none focus:border-ring focus:ring-3 focus:ring-ring/50" /> : <Input id={`pm-${field.key}`} name={field.key} type={field.type ?? "text"} min={field.type === "number" ? "0" : undefined} step={field.type === "number" ? "any" : undefined} required={field.required} defaultValue={value(field.key, fallback[field.key])} />}
+                {field.type === "textarea" ? <textarea id={`pm-${field.key}`} name={field.key} defaultValue={value(field.key, fallback[field.key])} className="min-h-24 w-full rounded-sm border border-input bg-transparent px-3 py-2 text-sm outline-none focus:border-ring focus:ring-3 focus:ring-ring/50" /> : <Input id={`pm-${field.key}`} name={field.key} type={field.type ?? "text"} min={field.type === "number" ? "0" : undefined} step={field.type === "number" ? "any" : undefined} defaultValue={value(field.key, fallback[field.key])} />}
               </div>)}
             </div>
           </section>)}

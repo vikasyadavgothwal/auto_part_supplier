@@ -1,8 +1,10 @@
 "use client"
 
+import { useState, type MouseEvent } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
+  AlertCircle,
   House,
   Box,
   Settings,
@@ -21,8 +23,21 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
+import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
 import { appRoutes, stripBasePath } from "@/lib/routes"
+import {
+  supplierCanAccessDashboard,
+  type SupplierProfileRecord,
+} from "@/lib/supplier-settings"
 
 const items = [
   { title: "Dashboard", url: appRoutes.dashboard, icon: House },
@@ -33,74 +48,124 @@ const items = [
   { title: "Reviews", url: appRoutes.reviews, icon: Star },
   { title: "Performance", url: appRoutes.performance, icon: BarChart3 },
 ]
-export function AppSidebar() {
+export function AppSidebar({ profile }: { profile: SupplierProfileRecord }) {
   const currentPath = stripBasePath(usePathname())
-  return (
-    <Sidebar className="border-sidebar-border bg-brand-panel text-foreground">
-      <SidebarHeader className="border-b border-border px-6 py-6">
-        <Link href={appRoutes.dashboard} className="block">
-          <h2 className="text-xl font-bold">AutoPartsPro</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Supplier 
-          </p>
-        </Link>
-      </SidebarHeader>
-      <SidebarContent className="flex-1 overflow-y-auto px-4 py-4">
-        <SidebarMenu className="space-y-1">
-          {items.map((item) => {
-            const Icon = item.icon
-            const isActive =
-              currentPath === item.url ||
-              currentPath.startsWith(`${item.url}/`)
-            return (
-              <SidebarMenuItem key={item.title}>
-                <SidebarMenuButton
-                  asChild
-                  isActive={isActive}
-                  className={`h-auto rounded-sm px-4 py-3 transition-all ${
-                    isActive
-                      ? "bg-primary text-primary-foreground hover:bg-primary"
-                      : "text-muted-foreground hover:bg-muted"
-                  }`}
-                >
-                  <Link href={item.url} className="flex items-center gap-3">
-                    {Icon && <Icon className="h-5 w-5" />}
-                    <span className="font-medium">{item.title}</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            )
-          })}
-        </SidebarMenu>
-      </SidebarContent>
+  const [documentDialogOpen, setDocumentDialogOpen] = useState(false)
+  const canAccessDashboard = supplierCanAccessDashboard(profile)
 
-      <SidebarFooter className="border-t border-border p-4">
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              asChild
-              isActive={
-                currentPath === appRoutes.settings ||
-                currentPath.startsWith(`${appRoutes.settings}/`)
-              }
-              className={`h-auto rounded-sm px-4 py-3 transition-all ${
-                currentPath === appRoutes.settings ||
-                currentPath.startsWith(`${appRoutes.settings}/`)
-                  ? "bg-primary text-primary-foreground hover:bg-primary"
-                  : "text-muted-foreground hover:bg-muted"
-              }`}
-            >
-              <Link
-                href={appRoutes.settings}
-                className="flex items-center gap-3"
+  const handleRestrictedNavigation = (
+    event: MouseEvent<HTMLAnchorElement>,
+  ) => {
+    if (canAccessDashboard) return
+    event.preventDefault()
+    setDocumentDialogOpen(true)
+  }
+
+  return (
+    <>
+      <Sidebar className="border-sidebar-border bg-brand-panel text-foreground">
+        <SidebarHeader className="border-b border-border px-6 py-6">
+          <Link href={appRoutes.dashboard} className="block">
+            <h2 className="text-xl font-bold">AutoPartsPro</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Supplier</p>
+          </Link>
+        </SidebarHeader>
+        <SidebarContent className="flex-1 overflow-y-auto px-4 py-4">
+          <SidebarMenu className="space-y-1">
+            {items.map((item) => {
+              const Icon = item.icon
+              const isActive =
+                currentPath === item.url ||
+                currentPath.startsWith(`${item.url}/`)
+              return (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive}
+                    className={`h-auto rounded-sm px-4 py-3 transition-all ${
+                      isActive
+                        ? "bg-primary text-primary-foreground hover:bg-primary"
+                        : "text-muted-foreground hover:bg-muted"
+                    }`}
+                  >
+                    <Link
+                      href={item.url}
+                      className="flex items-center gap-3"
+                      onClick={handleRestrictedNavigation}
+                    >
+                      {Icon && <Icon className="h-5 w-5" />}
+                      <span className="font-medium">{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )
+            })}
+          </SidebarMenu>
+        </SidebarContent>
+
+        <SidebarFooter className="border-t border-border p-4">
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                isActive={
+                  currentPath === appRoutes.settings ||
+                  currentPath.startsWith(`${appRoutes.settings}/`)
+                }
+                className={`h-auto rounded-sm px-4 py-3 transition-all ${
+                  currentPath === appRoutes.settings ||
+                  currentPath.startsWith(`${appRoutes.settings}/`)
+                    ? "bg-primary text-primary-foreground hover:bg-primary"
+                    : "text-muted-foreground hover:bg-muted"
+                }`}
               >
-                <Settings className="h-5 w-5" />
-                <span className="font-medium">Settings</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarFooter>
-    </Sidebar>
+                <Link
+                  href={appRoutes.settings}
+                  className="flex items-center gap-3"
+                >
+                  <Settings className="h-5 w-5" />
+                  <span className="font-medium">Settings</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarFooter>
+      </Sidebar>
+      <Dialog open={documentDialogOpen} onOpenChange={setDocumentDialogOpen}>
+        <DialogContent className="w-[calc(100vw-2rem)] max-w-[26rem] overflow-hidden border-border bg-brand-panel p-0 text-foreground shadow-2xl">
+          <div className="h-1 bg-destructive" />
+          <DialogHeader className="items-center space-y-4 px-5 pb-3 pt-7 text-center sm:px-7">
+            <div className="flex size-16 shrink-0 items-center justify-center rounded-full border border-destructive/25 bg-destructive/10 text-destructive shadow-[0_0_0_8px_rgba(239,68,68,0.06)]">
+              <AlertCircle className="size-8" />
+            </div>
+            <div className="max-w-sm space-y-2">
+              <DialogTitle className="text-xl font-semibold leading-7 text-foreground">
+                Upload supplier documents
+              </DialogTitle>
+              <DialogDescription className="break-words text-sm leading-6 text-muted-foreground">
+                Please upload your supplier verification documents in Settings.
+                You can use dashboard tools after admin verifies your profile.
+              </DialogDescription>
+            </div>
+          </DialogHeader>
+          {profile.supplierApprovalStatus === "Rejected" &&
+          profile.supplierApprovalRejectionReason ? (
+            <div className="px-5 pb-3 sm:px-7">
+              <p className="break-words rounded-sm border border-destructive/30 bg-destructive/10 p-3 text-sm leading-6 text-destructive">
+                {profile.supplierApprovalRejectionReason}
+              </p>
+            </div>
+          ) : null}
+          <DialogFooter className="justify-center px-5 pb-7 pt-3 sm:justify-center sm:px-7">
+            <Button
+              asChild
+              className="h-10 min-w-36 bg-primary px-6 text-primary-foreground hover:bg-brand-primary-hover"
+            >
+              <Link href={appRoutes.settings}>Go to Settings</Link>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }
