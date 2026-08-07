@@ -5,6 +5,6 @@ export const dynamic = "force-dynamic"
 export async function GET(request: Request) {
   return forwardSupplierBackendRequest(
     request,
-    "/api/supplier/parts/product-image",
+    "/api/v1/supplier/parts/product-image",
   )
 }

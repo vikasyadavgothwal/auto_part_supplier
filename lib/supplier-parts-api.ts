@@ -30,7 +30,7 @@ function buildForwardHeaders(cookieHeader?: string | null, hasJsonBody = false) 
 }
 
 export async function getSupplierPartsFromBackend(cookieHeader?: string | null) {
-  const response = await fetch(buildAdminUrl("/api/supplier/parts", "?page=1&pageSize=10&status=mapped"), {
+  const response = await fetch(buildAdminUrl("/api/v1/supplier/parts", "?page=1&pageSize=10&status=mapped"), {
     cache: "no-store",
     headers: buildForwardHeaders(cookieHeader),
   })
@@ -50,7 +50,7 @@ export async function createSupplierPartInBackend(
   input: CreateSupplierPartPayload,
   cookieHeader?: string | null,
 ) {
-  const response = await fetch(buildAdminUrl("/api/supplier/parts"), {
+  const response = await fetch(buildAdminUrl("/api/v1/supplier/parts"), {
     method: "POST",
     cache: "no-store",
     headers: buildForwardHeaders(cookieHeader, true),
@@ -66,7 +66,7 @@ export async function createSupplierPartInBackend(
 }
 
 export async function forwardSupplierPartsRequest(request: Request) {
-  return forwardSupplierBackendRequest(request, "/api/supplier/parts")
+  return forwardSupplierBackendRequest(request, "/api/v1/supplier/parts")
 }
 
 export async function forwardSupplierBackendRequest(

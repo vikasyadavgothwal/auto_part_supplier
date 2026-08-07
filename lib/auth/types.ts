@@ -18,6 +18,7 @@ export type AuthApiPayload =
       success: true
       user: DashboardUser
       expiresAt?: string
+      mfa?: { challengeId: string; method: "otp" | "pin_or_otp"; planCode: "Free" | "Pro" | "Enterprise"; hasPin: boolean; message: string }
     }
   | {
       ok: false

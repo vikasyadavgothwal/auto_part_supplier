@@ -50,7 +50,16 @@ Supplier-facing dashboard for inventory, offers, orders, RFQ inbox, performance,
 - Inventory, RFQ inbox, offers, orders, and settings pages render
 - Auth cookies are set/cleared through backend login/logout/refresh routes
 - Backend URL points to the admin API server, not the supplier frontend
-- Run the commands documented in this app README when relevant.
+- Preferred validation: `pnpm lint`, `pnpm exec tsc --noEmit`, `pnpm test`, and `pnpm build` when relevant.
 - Update project root `docs/AI_HANDOFF.md` after major changes.
+
+### App-Specific Boundaries
+
+- Supplier product upload limits, staff limits, role access, and plan feature access must be enforced by `auto_parts_admin`.
+- UI menu/tab visibility may use backend-provided permissions, but backend APIs must still enforce every supplier action.
+
+### Visual Design Rule
+
+- For any new UI feature (buttons, inputs, selects, modals, tables, cards, and similar controls), use the existing ShadCN UI components and keep spacing, type scale, colors, and interaction patterns aligned with the current app design language.
 
 <!-- END:autoparts-pro-codex-docs -->

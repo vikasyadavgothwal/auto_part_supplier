@@ -168,7 +168,7 @@ export function ProductMasterForm({ open, onOpenChange, product, onSaved }: {
       const files = data.getAll("imageFiles").filter((item): item is File => item instanceof File && item.size > 0)
       if (files.length) {
         const upload = new FormData(); files.forEach((file) => upload.append("images", file))
-        const response = await authenticatedFetch("/api/supplier/parts/images", { method: "POST", body: upload })
+        const response = await authenticatedFetch("/api/v1/supplier/parts/images", { method: "POST", body: upload })
         const result = await response.json() as { ok: boolean; images?: Array<{url:string}>; message?: string }
         if (!response.ok || !result.ok) throw new Error(result.message ?? "Unable to upload images")
         storedUrls = result.images?.map((image) => image.url) ?? storedUrls
@@ -190,7 +190,7 @@ export function ProductMasterForm({ open, onOpenChange, product, onSaved }: {
         compliance: { warrantyMonths:get("Compliance | Warranty Period (Months)"), certification:get("Compliance | Certification (e.g., ESMA)") },
         marketplace: { allowBackorders:bool(get("Marketplace Settings | Allow Backorders (Yes/No)"), false), maxOrderQuantity:get("Marketplace Settings | Max Order Quantity"), isActive:bool(get("Marketplace Settings | Is Active (Yes/No)"), true) },
       }
-      const response = await authenticatedFetch(product?.id ? `/api/supplier/parts/${product.id}` : "/api/supplier/parts", { method: product?.id ? "PATCH" : "POST", headers:{"content-type":"application/json"}, body:JSON.stringify(payload) })
+      const response = await authenticatedFetch(product?.id ? `/api/v1/supplier/parts/${product.id}` : "/api/v1/supplier/parts", { method: product?.id ? "PATCH" : "POST", headers:{"content-type":"application/json"}, body:JSON.stringify(payload) })
       const result = await response.json() as SupplierPartCreateResponse
       if (!response.ok || !result.ok || !result.part) throw new Error(result.message ?? "Unable to save product")
       const message = result.part.mappingStatus === "mapped" ? "Product saved and mapped successfully." : "Product saved for review because no exact local or 17VIN match was found."

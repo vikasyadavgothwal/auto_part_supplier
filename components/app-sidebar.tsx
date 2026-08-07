@@ -12,6 +12,13 @@ import {
   ShoppingCart,
   BarChart3,
   Star,
+  Search,
+  Headphones,
+  Plug,
+  Shield,
+  BadgeCheck,
+  Users,
+  ShieldCheck,
 } from "lucide-react"
 
 import {
@@ -40,18 +47,36 @@ import {
 } from "@/lib/supplier-settings"
 
 const items = [
-  { title: "Dashboard", url: appRoutes.dashboard, icon: House },
-  { title: "RFQ Inbox", url: appRoutes.rfqInbox, icon: FileText },
-  { title: "Orders", url: appRoutes.orders, icon: ShoppingCart },
-  { title: "Inventory", url: appRoutes.inventory, icon: Box },
-  { title: "Offers", url: appRoutes.offers, icon: BarChart3 },
-  { title: "Reviews", url: appRoutes.reviews, icon: Star },
-  { title: "Performance", url: appRoutes.performance, icon: BarChart3 },
+  { title: "Dashboard", url: appRoutes.dashboard, icon: House, menuKey: "overview" },
+  { title: "RFQ Inbox", url: appRoutes.rfqInbox, icon: FileText, menuKey: "rfq-inbox" },
+  { title: "Orders", url: appRoutes.orders, icon: ShoppingCart, menuKey: "orders" },
+  { title: "Inventory", url: appRoutes.inventory, icon: Box, menuKey: "inventory" },
+  { title: "Offers", url: appRoutes.offers, icon: BarChart3, menuKey: "offers" },
+  { title: "Reviews", url: appRoutes.reviews, icon: Star, menuKey: "reviews" },
+  { title: "Performance", url: appRoutes.performance, icon: BarChart3, menuKey: "performance" },
+  { title: "Saved Searches", url: appRoutes.savedSearches, icon: Search, menuKey: "saved-searches" },
+  { title: "Integrations", url: appRoutes.integrations, icon: Plug, menuKey: "integrations" },
+  { title: "Security", url: appRoutes.security, icon: Shield, menuKey: "security" },
+  { title: "Support", url: appRoutes.support, icon: Headphones, menuKey: "support" },
+  { title: "Staff", url: appRoutes.staff, icon: Users, menuKey: "staff" },
+  { title: "Roles", url: appRoutes.roles, icon: ShieldCheck, menuKey: "roles" },
+  { title: "Plans", url: appRoutes.plans, icon: BadgeCheck, menuKey: "plans" },
 ]
-export function AppSidebar({ profile }: { profile: SupplierProfileRecord }) {
+export function AppSidebar({
+  profile,
+  visibleMenus = [],
+  planName,
+  isOwner = false,
+}: {
+  profile: SupplierProfileRecord
+  visibleMenus?: string[]
+  planName?: string | null
+  isOwner?: boolean
+}) {
   const currentPath = stripBasePath(usePathname())
   const [documentDialogOpen, setDocumentDialogOpen] = useState(false)
   const canAccessDashboard = supplierCanAccessDashboard(profile)
+  const visibleMenuSet = new Set(["settings", ...(isOwner ? ["overview", "plans"] : []), ...visibleMenus])
 
   const handleRestrictedNavigation = (
     event: MouseEvent<HTMLAnchorElement>,
@@ -69,10 +94,28 @@ export function AppSidebar({ profile }: { profile: SupplierProfileRecord }) {
             <h2 className="text-xl font-bold">AutoPartsPro</h2>
             <p className="mt-1 text-sm text-muted-foreground">Supplier</p>
           </Link>
+          {planName && visibleMenuSet.has("plans") ? (
+            <Link
+              href={appRoutes.plans}
+              className="group mt-4 block rounded-lg border border-primary/25 bg-background/70 p-3 shadow-[0_14px_34px_rgba(0,0,0,0.20)] transition hover:border-primary/50 hover:bg-muted/40"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <span className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-md border border-primary/25 bg-primary/10 text-primary">
+                    <BadgeCheck className="h-4 w-4" />
+                  </span>
+                  Current plan
+                </span>
+                <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_0_4px_rgba(52,211,153,0.12)]" />
+              </div>
+              <p className="mt-3 truncate text-sm font-semibold text-foreground">{planName}</p>
+              <p className="mt-1 text-xs text-muted-foreground group-hover:text-foreground/80">Manage or upgrade</p>
+            </Link>
+          ) : null}
         </SidebarHeader>
         <SidebarContent className="flex-1 overflow-y-auto px-4 py-4">
           <SidebarMenu className="space-y-1">
-            {items.map((item) => {
+            {items.filter((item) => visibleMenuSet.has(item.menuKey)).map((item) => {
               const Icon = item.icon
               const isActive =
                 currentPath === item.url ||
@@ -103,7 +146,7 @@ export function AppSidebar({ profile }: { profile: SupplierProfileRecord }) {
           </SidebarMenu>
         </SidebarContent>
 
-        <SidebarFooter className="border-t border-border p-4">
+        {visibleMenuSet.has("settings") ? <SidebarFooter className="border-t border-border p-4">
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton
@@ -129,7 +172,7 @@ export function AppSidebar({ profile }: { profile: SupplierProfileRecord }) {
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
-        </SidebarFooter>
+        </SidebarFooter> : null}
       </Sidebar>
       <Dialog open={documentDialogOpen} onOpenChange={setDocumentDialogOpen}>
         <DialogContent className="w-[calc(100vw-2rem)] max-w-[26rem] overflow-hidden border-border bg-brand-panel p-0 text-foreground shadow-2xl">

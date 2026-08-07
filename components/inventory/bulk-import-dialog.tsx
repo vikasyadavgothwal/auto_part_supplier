@@ -61,6 +61,7 @@ export function BulkImportDialog({
   const [isUploading, setIsUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [summary, setSummary] = useState<ProductBulkUploadSummary | null>(null)
+  const [upgradeHint, setUpgradeHint] = useState<string | null>(null)
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -79,7 +80,7 @@ export function BulkImportDialog({
     setSummary(null)
     try {
       const response = await authenticatedFetch(
-        "/api/supplier/parts/bulk-upload",
+        "/api/v1/supplier/parts/bulk-upload",
         { method: "POST", body: formData },
       )
       const payload = (await response.json()) as BulkUploadResponse
@@ -88,6 +89,7 @@ export function BulkImportDialog({
       }
       const nextSummary = payload.summary as ProductBulkUploadSummary
       setSummary(nextSummary)
+      setUpgradeHint(null)
       showToast({
         type: "success",
         title: "Workbook Processed",
@@ -101,7 +103,12 @@ export function BulkImportDialog({
         uploadError instanceof Error
           ? uploadError.message
           : "Unable to process the workbook"
+      const requiresPlanUpgrade =
+        /limit reached|Upgrade your plan|plan limit/i.test(message)
       setError(message)
+      setUpgradeHint(
+        requiresPlanUpgrade ? "This action is blocked by your current plan. Open Plans to upgrade and continue." : null,
+      )
       showToast({ type: "error", title: "Upload Error", message })
     } finally {
       setIsUploading(false)
@@ -165,6 +172,11 @@ export function BulkImportDialog({
           <div className="flex gap-3 rounded-sm border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
             <TriangleAlert className="size-5 shrink-0" />
             <p className="break-words">{error}</p>
+          </div>
+        ) : null}
+        {upgradeHint ? (
+          <div className="rounded-sm border border-primary/20 bg-primary/10 p-4 text-xs text-primary">
+            <p>{upgradeHint}</p>
           </div>
         ) : null}
 

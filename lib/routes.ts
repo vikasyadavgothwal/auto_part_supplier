@@ -13,12 +13,19 @@ function normalizeBasePath(value?: string) {
 export const appBasePath = normalizeBasePath(process.env.NEXT_PUBLIC_BASE_PATH)
 export const appRoutes = {
   dashboard: "/dashboard",
+  staff: "/staff",
+  roles: "/roles",
   rfqInbox: "/rfq-inbox",
   orders: "/orders",
   inventory: "/inventory",
   offers: "/offers",
   reviews: "/reviews",
   performance: "/performance",
+  savedSearches: "/saved-searches",
+  integrations: "/integrations",
+  security: "/security",
+  support: "/support",
+  plans: "/plans",
   settings: "/settings",
   login: "/login",
 } as const

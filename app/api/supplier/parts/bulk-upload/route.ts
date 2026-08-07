@@ -5,6 +5,6 @@ export const dynamic = "force-dynamic"
 export async function POST(request: Request) {
   return forwardSupplierBackendRequest(
     request,
-    "/api/supplier/parts/bulk-upload",
+    "/api/v1/supplier/parts/bulk-upload",
   )
 }

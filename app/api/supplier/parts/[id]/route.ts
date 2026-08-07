@@ -9,6 +9,6 @@ export async function PATCH(
   const { id } = await params
   return forwardSupplierBackendRequest(
     request,
-    `/api/supplier/parts/${encodeURIComponent(id)}`,
+    `/api/v1/supplier/parts/${encodeURIComponent(id)}`,
   )
 }
