@@ -72,6 +72,7 @@ export async function forwardSupplierPartsRequest(request: Request) {
 export async function forwardSupplierBackendRequest(
   request: Request,
   path: string,
+  options: { timeoutMs?: number } = {},
 ) {
-  return forwardBackendRequest(request, path)
+  return forwardBackendRequest(request, path, options)
 }

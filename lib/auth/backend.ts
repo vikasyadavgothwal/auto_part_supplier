@@ -96,7 +96,11 @@ export async function requestBackend(
   }
 }
 
-export async function forwardBackendRequest(request: Request, path: string) {
+export async function forwardBackendRequest(
+  request: Request,
+  path: string,
+  options: { timeoutMs?: number } = {},
+) {
   const sourceUrl = new URL(request.url)
   const url = getBackendUrl(path)
   url.search = sourceUrl.search
@@ -106,5 +110,6 @@ export async function forwardBackendRequest(request: Request, path: string) {
     method: request.method.toUpperCase(),
     setCookieMap: COOKIE_MAP,
     includeSetCookie: false,
+    timeoutMs: options.timeoutMs,
   })
 }

@@ -214,6 +214,18 @@ const documentFieldHasValue = (
   field: keyof SupplierProfileFormValues,
 ) => Boolean(String(form[field] ?? "").trim() || pendingDocumentUploads[field])
 
+type SupplierDocumentField =
+  | "tradeLicenseImageUrl"
+  | "vatTrnImageUrl"
+  | "emiratesIdPassportUrl"
+  | "emiratesIdBackUrl"
+  | "passportAddressUrl"
+  | "passportVisaFrontUrl"
+  | "bankAccountProofUrl"
+
+const supplierDocumentUrl = (field: SupplierDocumentField) =>
+  `/api/supplier/settings/documents?field=${encodeURIComponent(field)}`
+
 const validateDocumentFile = async (file: File) => {
   if (!DOCUMENT_TYPES.includes(file.type)) {
     return DOCUMENT_REQUIREMENTS
@@ -237,14 +249,14 @@ function DocumentUploadField({
   disabled,
   onUpload,
 }: {
-  field: keyof SupplierProfileFormValues
+  field: SupplierDocumentField
   kind: string
   label: string
   value: string
   pendingFileName?: string
   disabled: boolean
   onUpload: (
-    field: keyof SupplierProfileFormValues,
+    field: SupplierDocumentField,
     kind: string,
     event: ChangeEvent<HTMLInputElement>,
   ) => void
@@ -301,7 +313,7 @@ function DocumentUploadField({
         ) : null}
         {value ? (
           <a
-            href={value}
+            href={supplierDocumentUrl(field)}
             target="_blank"
             rel="noreferrer"
             className="inline-flex h-10 items-center justify-center gap-2 rounded-sm border border-border px-4 text-sm text-muted-foreground transition-colors hover:text-foreground"

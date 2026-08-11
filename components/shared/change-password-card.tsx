@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { KeyRound } from "lucide-react"
+import { Eye, EyeOff, KeyRound } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -22,6 +22,7 @@ type Feedback = { title: string; message: string }
 
 export function ChangePasswordCard() {
   const [form, setForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" })
+  const [visible, setVisible] = useState({ currentPassword: false, newPassword: false, confirmPassword: false })
   const [feedback, setFeedback] = useState<Feedback | null>(null)
   const [isSaving, setIsSaving] = useState(false)
 
@@ -64,7 +65,26 @@ export function ChangePasswordCard() {
         {(["currentPassword", "newPassword", "confirmPassword"] as const).map((key) => (
           <div key={key} className="space-y-2">
             <Label htmlFor={`password-${key}`}>{key === "currentPassword" ? "Current Password" : key === "newPassword" ? "New Password" : "Confirm Password"}</Label>
-            <Input id={`password-${key}`} type="password" autoComplete={key === "currentPassword" ? "current-password" : "new-password"} value={form[key]} onChange={(event) => setForm((current) => ({ ...current, [key]: event.target.value }))} maxLength={128} className="border-border bg-brand-surface" />
+            <div className="relative">
+              <Input
+                id={`password-${key}`}
+                type={visible[key] ? "text" : "password"}
+                autoComplete={key === "currentPassword" ? "current-password" : "new-password"}
+                value={form[key]}
+                onChange={(event) => setForm((current) => ({ ...current, [key]: event.target.value }))}
+                maxLength={128}
+                placeholder={key === "currentPassword" ? "Enter current password" : key === "newPassword" ? "Enter new password" : "Confirm new password"}
+                className="border-border bg-brand-surface pr-11"
+              />
+              <button
+                type="button"
+                aria-label={`${visible[key] ? "Hide" : "Show"} ${key === "currentPassword" ? "current password" : key === "newPassword" ? "new password" : "confirm password"}`}
+                onClick={() => setVisible((current) => ({ ...current, [key]: !current[key] }))}
+                className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
+              >
+                {visible[key] ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+              </button>
+            </div>
           </div>
         ))}
         <div className="md:col-span-3"><Button type="button" disabled={isSaving} onClick={submit} className="gap-2 bg-primary text-primary-foreground hover:bg-brand-primary-hover"><KeyRound className="size-4" />{isSaving ? "Changing..." : "Change Password"}</Button></div>

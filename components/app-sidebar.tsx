@@ -12,7 +12,6 @@ import {
   ShoppingCart,
   BarChart3,
   Star,
-  Search,
   Headphones,
   Plug,
   KeyRound,
@@ -55,7 +54,6 @@ const items = [
   { title: "Offers", url: appRoutes.offers, icon: BarChart3, menuKey: "offers" },
   { title: "Reviews", url: appRoutes.reviews, icon: Star, menuKey: "reviews" },
   { title: "Performance", url: appRoutes.performance, icon: BarChart3, menuKey: "performance" },
-  { title: "Saved Searches", url: appRoutes.savedSearches, icon: Search, menuKey: "saved-searches" },
   { title: "Integrations", url: appRoutes.integrations, icon: Plug, menuKey: "integrations" },
   { title: "API Keys", url: appRoutes.apiKeys, icon: KeyRound, menuKey: "api-keys" },
   { title: "Paid Add-ons", url: appRoutes.addOns, icon: CirclePlus, menuKey: "add-ons" },
@@ -65,6 +63,9 @@ const items = [
   { title: "Plans", url: appRoutes.plans, icon: BadgeCheck, menuKey: "plans" },
 ]
 const fallbackMenuKeys = items.map((item) => item.menuKey)
+const fallbackMenuKeysWithoutApiAccess = fallbackMenuKeys.filter(
+  (menuKey) => menuKey !== "api-keys",
+)
 
 export function AppSidebar({
   profile,
@@ -80,8 +81,31 @@ export function AppSidebar({
   const currentPath = stripBasePath(usePathname())
   const [documentDialogOpen, setDocumentDialogOpen] = useState(false)
   const canAccessDashboard = supplierCanAccessDashboard(profile)
-  const effectiveVisibleMenus = visibleMenus.length ? visibleMenus : isOwner || !planName ? fallbackMenuKeys : []
-  const visibleMenuSet = new Set(["settings", ...(isOwner ? ["overview", "plans", "add-ons", "api-keys"] : []), ...effectiveVisibleMenus])
+  const isApprovalPending = profile.supplierApprovalStatus === "Pending"
+  const isApprovalRejected = profile.supplierApprovalStatus === "Rejected"
+  const modalTitle = isApprovalPending
+    ? "Supplier verification in progress"
+    : isApprovalRejected
+      ? "Document review updates requested"
+      : "Upload supplier documents"
+  const modalDescription = isApprovalPending
+    ? "Your supplier documents have been submitted and are currently under admin review. Once approved, dashboard tools and features will be unlocked automatically."
+    : isApprovalRejected
+      ? "Please update your verification documents in Settings and resubmit for review."
+      : "Please upload your supplier verification documents in Settings. You can use dashboard tools after admin verifies your profile."
+
+  const fallbackMenus =
+    isOwner ? fallbackMenuKeysWithoutApiAccess : fallbackMenuKeys
+  const effectiveVisibleMenus = visibleMenus.length
+    ? visibleMenus
+    : isOwner || !planName
+      ? fallbackMenus
+      : []
+  const visibleMenuSet = new Set([
+    "settings",
+    ...(isOwner ? ["overview", "plans", "add-ons"] : []),
+    ...effectiveVisibleMenus,
+  ])
 
   const handleRestrictedNavigation = (
     event: MouseEvent<HTMLAnchorElement>,
@@ -188,11 +212,10 @@ export function AppSidebar({
             </div>
             <div className="max-w-sm space-y-2">
               <DialogTitle className="text-xl font-semibold leading-7 text-foreground">
-                Upload supplier documents
+                {modalTitle}
               </DialogTitle>
               <DialogDescription className="break-words text-sm leading-6 text-muted-foreground">
-                Please upload your supplier verification documents in Settings.
-                You can use dashboard tools after admin verifies your profile.
+                {modalDescription}
               </DialogDescription>
             </div>
           </DialogHeader>
@@ -206,10 +229,11 @@ export function AppSidebar({
           ) : null}
           <DialogFooter className="justify-center px-5 pb-7 pt-3 sm:justify-center sm:px-7">
             <Button
-              asChild
+              type="button"
+              onClick={() => setDocumentDialogOpen(false)}
               className="h-10 min-w-36 bg-primary px-6 text-primary-foreground hover:bg-brand-primary-hover"
             >
-              <Link href={appRoutes.settings}>Go to Settings</Link>
+              OK
             </Button>
           </DialogFooter>
         </DialogContent>

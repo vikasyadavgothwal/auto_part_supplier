@@ -52,6 +52,16 @@ const downloadUnmapped = (base64: string) => {
   URL.revokeObjectURL(url)
 }
 
+const readBulkUploadResponse = async (response: Response) => {
+  const text = await response.text()
+  if (!text) throw new Error("Unable to process the workbook")
+  try {
+    return JSON.parse(text) as BulkUploadResponse
+  } catch {
+    throw new Error(response.ok ? "Unable to process the workbook" : text)
+  }
+}
+
 export function BulkImportDialog({
   open,
   onOpenChange,
@@ -66,24 +76,29 @@ export function BulkImportDialog({
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const formData = new FormData(event.currentTarget)
-    const workbook = formData.get("workbookFile")
-    if (!(workbook instanceof File) || workbook.size === 0) {
-      const message = "Select a completed Product Master XLSX workbook."
+    const selectedFile = formData.get("workbookFile")
+    if (!(selectedFile instanceof File) || selectedFile.size === 0) {
+      const message = "Select a completed Product Master XLSX or CSV file."
       setError(message)
       setSummary(null)
       showToast({ type: "error", title: "Validation Error", message })
       return
     }
 
+    const isCsv = selectedFile.name.toLowerCase().endsWith(".csv")
+    const uploadData = new FormData()
+    uploadData.set("mode", "products")
+    uploadData.set(isCsv ? "productFile" : "workbookFile", selectedFile)
+
     setIsUploading(true)
     setError(null)
     setSummary(null)
     try {
       const response = await authenticatedFetch(
-        "/api/v1/supplier/parts/bulk-upload",
-        { method: "POST", body: formData },
+        "/api/supplier/parts/bulk-upload",
+        { method: "POST", body: uploadData },
       )
-      const payload = (await response.json()) as BulkUploadResponse
+      const payload = await readBulkUploadResponse(response)
       if (!response.ok || !payload.ok || !payload.summary) {
         throw new Error(payload.message ?? "Unable to process the workbook")
       }
@@ -119,10 +134,10 @@ export function BulkImportDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[92vh] overflow-y-auto rounded-sm bg-brand-panel sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle className="text-xl">Upload Product Master</DialogTitle>
+          <DialogTitle className="text-xl">Upload Product Master XLSX or CSV</DialogTitle>
           <DialogDescription>
-            Use one workbook for products, mapping, fitment, pricing, stock,
-            images, documents, bundles, shipping, and compliance data.
+            Upload the Product Master workbook or an exported CSV to update
+            your supplier products, pricing, and stock.
           </DialogDescription>
         </DialogHeader>
 
@@ -131,11 +146,12 @@ export function BulkImportDialog({
             <FileSpreadsheet className="mt-0.5 size-5 shrink-0 text-primary" />
             <div className="min-w-0">
               <p className="font-semibold text-foreground">
-                Product Master XLSX template
+                Product Master XLSX or CSV
               </p>
               <p className="mt-1 text-sm leading-6 text-brand-muted">
                 Download the template, complete Product_Master, keep the lookup
-                sheets in the workbook, and upload the same XLSX file here.
+                sheets in the workbook for XLSX uploads, or export your current
+                products as CSV and upload that file directly.
                 Existing supplier SKUs update only your offer; new OEMs are
                 checked against the catalog and VIN mapping flow.
               </p>
@@ -159,12 +175,12 @@ export function BulkImportDialog({
               id="product-master-workbook"
               name="workbookFile"
               type="file"
-              accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+              accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
             />
           </div>
           <Button type="submit" disabled={isUploading} className="w-full">
             <Upload />
-            {isUploading ? "Mapping products..." : "Upload and map workbook"}
+            {isUploading ? "Mapping products..." : "Upload and map file"}
           </Button>
         </form>
 

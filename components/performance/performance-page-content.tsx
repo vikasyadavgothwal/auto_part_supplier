@@ -9,7 +9,7 @@ import type { PerformanceMetric, TopSellingProduct } from "./types"
 const currency = (value: number) => `AED ${value.toLocaleString("en-AE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 const change = (current: number, previous: number) => previous ? ((current - previous) / previous) * 100 : current ? 100 : 0
 
-export function PerformancePageContent({ analytics, error }: { analytics: SupplierAnalytics | null; error: string | null }) {
+export function PerformancePageContent({ analytics, error, showUsage, showActivity }: { analytics: SupplierAnalytics | null; error: string | null; showUsage: boolean; showActivity: boolean }) {
   if (!analytics) return <div className="min-h-screen bg-background p-8 text-foreground"><h1 className="text-3xl font-bold">Performance Analytics</h1><p className="mt-4 rounded border border-destructive/30 bg-destructive/10 p-4 text-destructive">{error || "Unable to load supplier performance"}</p></div>
 
   const revenueChange = change(analytics.overview.monthlyRevenue, analytics.overview.previousMonthRevenue)
@@ -23,5 +23,5 @@ export function PerformancePageContent({ analytics, error }: { analytics: Suppli
   ]
   const products: TopSellingProduct[] = analytics.topProducts.map((product, index) => ({ rank: index + 1, name: product.name, unitsSold: `${product.unitsSold} units sold`, revenue: currency(product.revenue) }))
 
-  return <div className="min-h-screen bg-background text-foreground"><div className="mx-auto max-w-[1600px] space-y-8 p-6 lg:p-8"><div><h1 className="text-3xl font-bold tracking-tight">Performance Analytics</h1><p className="mt-2 text-sm text-brand-muted">Live metrics calculated from your RFQ quotes, orders, customers, and inventory.</p></div><PerformanceMetricGrid metrics={metrics} /><div className="grid grid-cols-1 gap-6 lg:grid-cols-2"><RevenueTrendChart data={analytics.revenueTrend} /><OrderStatusChart counts={analytics.orderCounts} /></div><TopSellingProductsCard products={products} /></div></div>
+  return <div className="min-h-screen bg-background text-foreground"><div className="mx-auto max-w-[1600px] space-y-8 p-6 lg:p-8"><div><h1 className="text-3xl font-bold tracking-tight">Performance Analytics</h1><p className="mt-2 text-sm text-brand-muted">Live metrics calculated from your RFQ quotes, orders, customers, and inventory.</p></div><PerformanceMetricGrid metrics={metrics} />{showUsage ? <div className="grid grid-cols-1 gap-6 lg:grid-cols-2"><RevenueTrendChart data={analytics.revenueTrend} /><OrderStatusChart counts={analytics.orderCounts} /></div> : null}{showActivity ? <TopSellingProductsCard products={products} /> : null}</div></div>
 }

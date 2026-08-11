@@ -73,6 +73,16 @@ const rawObject = (product?: Product | null) =>
   product?.rawUploadData && typeof product.rawUploadData === "object" && !Array.isArray(product.rawUploadData)
     ? product.rawUploadData as Record<string, unknown> : {}
 
+const readJsonResponse = async <T,>(response: Response, fallbackMessage: string) => {
+  const text = await response.text()
+  if (!text) throw new Error(fallbackMessage)
+  try {
+    return JSON.parse(text) as T
+  } catch {
+    throw new Error(response.ok ? fallbackMessage : text)
+  }
+}
+
 const requiredFields = groups.flatMap((group) =>
   group.fields.filter((field) => field.required).map((field) => field.key),
 )
@@ -168,8 +178,8 @@ export function ProductMasterForm({ open, onOpenChange, product, onSaved }: {
       const files = data.getAll("imageFiles").filter((item): item is File => item instanceof File && item.size > 0)
       if (files.length) {
         const upload = new FormData(); files.forEach((file) => upload.append("images", file))
-        const response = await authenticatedFetch("/api/v1/supplier/parts/images", { method: "POST", body: upload })
-        const result = await response.json() as { ok: boolean; images?: Array<{url:string}>; message?: string }
+        const response = await authenticatedFetch("/api/supplier/parts/images", { method: "POST", body: upload })
+        const result = await readJsonResponse<{ ok: boolean; images?: Array<{url:string}>; message?: string }>(response, "Unable to upload images")
         if (!response.ok || !result.ok) throw new Error(result.message ?? "Unable to upload images")
         storedUrls = result.images?.map((image) => image.url) ?? storedUrls
       }
@@ -190,8 +200,8 @@ export function ProductMasterForm({ open, onOpenChange, product, onSaved }: {
         compliance: { warrantyMonths:get("Compliance | Warranty Period (Months)"), certification:get("Compliance | Certification (e.g., ESMA)") },
         marketplace: { allowBackorders:bool(get("Marketplace Settings | Allow Backorders (Yes/No)"), false), maxOrderQuantity:get("Marketplace Settings | Max Order Quantity"), isActive:bool(get("Marketplace Settings | Is Active (Yes/No)"), true) },
       }
-      const response = await authenticatedFetch(product?.id ? `/api/v1/supplier/parts/${product.id}` : "/api/v1/supplier/parts", { method: product?.id ? "PATCH" : "POST", headers:{"content-type":"application/json"}, body:JSON.stringify(payload) })
-      const result = await response.json() as SupplierPartCreateResponse
+      const response = await authenticatedFetch(product?.id ? `/api/supplier/parts/${product.id}` : "/api/supplier/parts", { method: product?.id ? "PATCH" : "POST", headers:{"content-type":"application/json"}, body:JSON.stringify(payload) })
+      const result = await readJsonResponse<SupplierPartCreateResponse>(response, "Unable to save product")
       if (!response.ok || !result.ok || !result.part) throw new Error(result.message ?? "Unable to save product")
       const message = result.part.mappingStatus === "mapped" ? "Product saved and mapped successfully." : "Product saved for review because no exact local or 17VIN match was found."
       onSaved(result.part, message)

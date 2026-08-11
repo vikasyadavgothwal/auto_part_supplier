@@ -45,6 +45,7 @@ export function InventoryPageContent({
   const [isLoading, setIsLoading] = useState(false)
   const [isExportingCatalogue, setIsExportingCatalogue] = useState(false)
   const [isExportingInventory, setIsExportingInventory] = useState(false)
+  const [isExportingCsv, setIsExportingCsv] = useState(false)
   const [productsError, setProductsError] = useState("")
   const [isProductFormOpen, setIsProductFormOpen] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
@@ -66,7 +67,7 @@ export function InventoryPageContent({
         q: query.trim(),
         status: "mapped",
       })
-      const response = await authenticatedFetch(`/api/v1/supplier/parts?${params}`)
+      const response = await authenticatedFetch(`/api/supplier/parts?${params}`)
       const payload = (await response.json()) as SupplierPartsListResponse
       if (
         !response.ok ||
@@ -176,6 +177,21 @@ export function InventoryPageContent({
             >
               <Download className="mr-2 size-5" />
               {isExportingInventory ? "Exporting..." : "Export Stock & Prices"}
+            </Button>
+            <Button
+              variant="outline"
+              className="h-12 rounded-sm px-6"
+              disabled={isExportingCsv}
+              onClick={() =>
+                void downloadExport(
+                  "/api/supplier/parts/export/products/csv",
+                  "supplier-product-master.csv",
+                  setIsExportingCsv,
+                )
+              }
+            >
+              <Download className="mr-2 size-5" />
+              {isExportingCsv ? "Exporting..." : "Export CSV"}
             </Button>
             <Button
               variant="outline"
