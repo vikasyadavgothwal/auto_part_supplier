@@ -54,8 +54,9 @@ export function InventoryPageContent({
 
   const stats = buildInventoryStats(products)
   const lowStockCount = products.filter(
-    (product) => product.stock > 0 && product.stock <= 12,
+    (product) => product.isActive && product.stock > 0 && product.stock <= 12,
   ).length
+  const inactiveProductCount = products.filter((product) => !product.isActive).length
 
   async function loadProducts(page: number, query = searchQuery) {
     setIsLoading(true)
@@ -86,6 +87,28 @@ export function InventoryPageContent({
     } finally {
       setIsLoading(false)
     }
+  }
+
+  async function deleteProduct(product: Product) {
+    if (!product.id) {
+      throw new Error("Product id is missing")
+    }
+    const response = await authenticatedFetch(`/api/supplier/parts/${product.id}`, {
+      method: "DELETE",
+    })
+    const payload = (await response.json().catch(() => null)) as {
+      ok?: boolean
+      message?: string
+    } | null
+    if (!response.ok || !payload?.ok) {
+      throw new Error(payload?.message ?? "Unable to delete product")
+    }
+    showToast({
+      type: "success",
+      title: "Product deleted",
+      message: `${product.productName} was removed from your inventory.`,
+    })
+    await loadProducts(pagination.page)
   }
 
   const parseExportFilename = (disposition: string | null) => {
@@ -275,11 +298,27 @@ export function InventoryPageContent({
           </p>
         ) : null}
 
+        {inactiveProductCount ? (
+          <Alert className="border-brand-warning/30 bg-brand-warning/10">
+            <TriangleAlert className="!text-brand-warning" />
+            <AlertTitle className="text-brand-warning">
+              {inactiveProductCount} product{inactiveProductCount === 1 ? " is" : "s are"} inactive
+            </AlertTitle>
+            <AlertDescription className="text-brand-muted">
+              These products exceed your current product, brand, or category limits. Upgrade your plan to activate them, or delete products you no longer need.
+            </AlertDescription>
+          </Alert>
+        ) : null}
+
         <InventoryProductsTable
           products={products}
           onEditProduct={(product) => {
             setEditingProduct(product)
             setIsProductFormOpen(true)
+          }}
+          onDeleteProduct={deleteProduct}
+          onUpgradePlan={() => {
+            window.location.href = "/plans"
           }}
         />
 

@@ -37,6 +37,8 @@ export function mapSupplierPartToProduct(part: SupplierPartApiRecord): Product {
     currency: "AED",
     mapping: part.mappingStatus === "mapped" ? "Mapped" : "Unmapped",
     mappingStatus,
+    isActive: part.isActive,
+    planSuspensionReason: part.planSuspensionReason,
     vehicles: part.mappingStatus === "mapped" ? "Mapped" : "Pending",
     category: part.category ?? part.part?.category ?? "Not provided",
     oemSupersessionNumbers: part.oemSupersessionNumbers ?? [],

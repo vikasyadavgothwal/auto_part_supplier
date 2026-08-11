@@ -24,6 +24,8 @@ export type Product = {
   currency: "AED"
   mapping: MappingStatus
   mappingStatus: SupplierMappingStatus
+  isActive: boolean
+  planSuspensionReason: string | null
   vehicles: string
   category: string
   oemSupersessionNumbers: string[]
@@ -66,6 +68,8 @@ export type SupplierPartApiRecord = {
   supplierImageUrls: string[]
   mappingStatus: SupplierPartMappingStatusApi
   mappingError: string | null
+  isActive: boolean
+  planSuspensionReason: string | null
   rawUploadData?: unknown
   createdAt: string
   updatedAt: string

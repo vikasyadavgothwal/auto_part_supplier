@@ -24,6 +24,8 @@ const emptyProductContent = {
   keyFeatures: [] as string[],
   priceValue: 0,
   currency: "AED" as const,
+  isActive: true,
+  planSuspensionReason: null,
 }
 
 export const products: readonly Product[] = [
