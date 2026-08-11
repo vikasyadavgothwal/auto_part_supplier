@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     },
   )
 
-  const response = new NextResponse(await backend.arrayBuffer(), {
+  const response = new NextResponse(backend.body, {
     status: backend.status,
     headers: {
       "content-type":
@@ -30,4 +30,3 @@ export async function GET(request: NextRequest) {
 
   return response
 }
-

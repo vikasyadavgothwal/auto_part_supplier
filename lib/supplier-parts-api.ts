@@ -3,7 +3,7 @@ import type {
   SupplierPartCreateResponse,
   SupplierPartsListResponse,
 } from "@/components/inventory/types"
-import { getBackendBaseUrl, toBackendCookieHeader } from "@/lib/auth/backend"
+import { forwardBackendRequest, getBackendBaseUrl, toBackendCookieHeader } from "@/lib/auth/backend"
 
 export function getAdminApiBaseUrl() {
   return getBackendBaseUrl()
@@ -73,30 +73,5 @@ export async function forwardSupplierBackendRequest(
   request: Request,
   path: string,
 ) {
-  const requestUrl = new URL(request.url)
-  const adminUrl = buildAdminUrl(path, requestUrl.search)
-  const method = request.method.toUpperCase()
-  const hasBody = method !== "GET" && method !== "HEAD"
-  const cookieHeader = request.headers.get("cookie")
-  const headers = buildForwardHeaders(cookieHeader)
-  const contentType = request.headers.get("content-type")
-  if (contentType) {
-    headers.set("content-type", contentType)
-  }
-  const body = hasBody ? await request.arrayBuffer() : undefined
-
-  const response = await fetch(adminUrl, {
-    method,
-    cache: "no-store",
-    headers,
-    body,
-  })
-  const text = await response.text()
-  return new Response(text, {
-    status: response.status,
-    headers: {
-      "content-type":
-        response.headers.get("content-type") ?? "application/json; charset=utf-8",
-    },
-  })
+  return forwardBackendRequest(request, path)
 }

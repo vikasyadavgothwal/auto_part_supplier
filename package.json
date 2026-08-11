@@ -5,7 +5,7 @@
   "packageManager": "pnpm@11.6.0",
   "scripts": {
     "preinstall": "node scripts/ensure-pnpm.js",
-    "dev": "node scripts/ensure-pnpm.js && next dev --port 3004",
+    "dev": "node scripts/ensure-pnpm.js && next dev --webpack --port 3004",
     "build": "next build",
     "start": "next start --port 3004",
     "lint": "eslint",

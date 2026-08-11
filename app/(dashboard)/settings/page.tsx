@@ -2,7 +2,6 @@ import { cookies } from "next/headers"
 
 import { SupplierSettingsManager } from "@/components/settings/supplier-settings-manager"
 import { AccountSettingsCard } from "@/components/shared/account-settings-card"
-import { LoginSecurityCard } from "@/components/shared/login-security-card"
 import { ChangePasswordCard } from "@/components/shared/change-password-card"
 import { requestBackend } from "@/lib/auth/backend"
 import { requireDashboardUser } from "@/lib/auth/server"
@@ -53,7 +52,6 @@ export default async function SettingsPage() {
         />
       ) : null}
       <AccountSettingsCard initialAccount={context.account} />
-      <LoginSecurityCard />
       <ChangePasswordCard />
     </div>
   )

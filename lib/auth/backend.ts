@@ -1,4 +1,14 @@
 import { NextResponse } from "next/server"
+import {
+  DEFAULT_PROXY_TIMEOUT_MS,
+  fetchWithTimeout,
+  getBackendBaseUrl as getBackendBaseUrlFromEnv,
+  getSetCookieHeaders as getSetCookieHeadersShared,
+  mergeCookieHeader as mergeCookieHeaderShared,
+  streamBackendRequest,
+  toBackendCookieHeader as toBackendCookieHeaderShared,
+  toDashboardSetCookie as toDashboardSetCookieShared,
+} from "@shared/backend-proxy"
 
 const BACKEND_BASE_URL_ENV_NAMES = [
   "ADMIN_API_BASE_URL",
@@ -10,44 +20,11 @@ const BACKEND_ACCESS_COOKIE = process.env.USER_ACCESS_COOKIE_NAME ?? "user_acces
 const BACKEND_REFRESH_COOKIE = process.env.USER_REFRESH_COOKIE_NAME ?? "user_refresh_token"
 export const SUPPLIER_ACCESS_COOKIE = "supplier_access_token"
 export const SUPPLIER_REFRESH_COOKIE = "supplier_refresh_token"
-const DEFAULT_BACKEND_TIMEOUT_MS = 10_000
-
-const timeoutSignal = () => AbortSignal.timeout(DEFAULT_BACKEND_TIMEOUT_MS)
-
-const parseCookieHeader = (header: string | null) => {
-  const cookies = new Map<string, string>()
-  for (const segment of header?.split(";") ?? []) {
-    const index = segment.indexOf("=")
-    if (index > 0) {
-      cookies.set(segment.slice(0, index).trim(), segment.slice(index + 1).trim())
-    }
-  }
-  return cookies
-}
-
-export function toBackendCookieHeader(header: string | null) {
-  const cookies = parseCookieHeader(header)
-  const accessToken = cookies.get(SUPPLIER_ACCESS_COOKIE)
-  const refreshToken = cookies.get(SUPPLIER_REFRESH_COOKIE)
-  cookies.delete(BACKEND_ACCESS_COOKIE)
-  cookies.delete(BACKEND_REFRESH_COOKIE)
-  cookies.delete(SUPPLIER_ACCESS_COOKIE)
-  cookies.delete(SUPPLIER_REFRESH_COOKIE)
-  if (accessToken) cookies.set(BACKEND_ACCESS_COOKIE, accessToken)
-  if (refreshToken) cookies.set(BACKEND_REFRESH_COOKIE, refreshToken)
-  return Array.from(cookies, ([name, value]) => `${name}=${value}`).join("; ")
-}
-
-const dashboardCookieName = (name: string) => {
-  if (name === BACKEND_ACCESS_COOKIE) return SUPPLIER_ACCESS_COOKIE
-  if (name === BACKEND_REFRESH_COOKIE) return SUPPLIER_REFRESH_COOKIE
-  return name
-}
-
-const toDashboardSetCookie = (value: string) => {
-  const separator = value.indexOf("=")
-  if (separator <= 0) return value
-  return `${dashboardCookieName(value.slice(0, separator))}${value.slice(separator)}`
+const COOKIE_MAP = {
+  backendAccessCookie: BACKEND_ACCESS_COOKIE,
+  backendRefreshCookie: BACKEND_REFRESH_COOKIE,
+  dashboardAccessCookie: SUPPLIER_ACCESS_COOKIE,
+  dashboardRefreshCookie: SUPPLIER_REFRESH_COOKIE,
 }
 
 export function getBackendUrl(path: string): URL {
@@ -55,29 +32,14 @@ export function getBackendUrl(path: string): URL {
 }
 
 export function getBackendBaseUrl(): string {
-  for (const name of BACKEND_BASE_URL_ENV_NAMES) {
-    const value = process.env[name]?.trim()
-    if (value) {
-      return value
-    }
-  }
-
-  throw new Error(
-    `Missing backend API URL. Set one of: ${BACKEND_BASE_URL_ENV_NAMES.join(", ")}.`,
-  )
+  return getBackendBaseUrlFromEnv({
+    envNames: BACKEND_BASE_URL_ENV_NAMES,
+    missingMessage: `Missing backend API URL. Set one of: ${BACKEND_BASE_URL_ENV_NAMES.join(", ")}.`,
+  })
 }
 
 export function getSetCookieHeaders(headers: Headers): string[] {
-  const enhancedHeaders = headers as Headers & {
-    getSetCookie?: () => string[]
-  }
-  const values = enhancedHeaders.getSetCookie?.()
-  if (values?.length) {
-    return values
-  }
-
-  const combinedValue = headers.get("set-cookie")
-  return combinedValue ? [combinedValue] : []
+  return getSetCookieHeadersShared(headers)
 }
 
 export function applySetCookieHeaders(
@@ -85,7 +47,7 @@ export function applySetCookieHeaders(
   values: string[],
 ): void {
   for (const value of values) {
-    response.headers.append("set-cookie", toDashboardSetCookie(value))
+    response.headers.append("set-cookie", toDashboardSetCookieShared(value, COOKIE_MAP))
   }
 }
 
@@ -93,20 +55,11 @@ export function mergeCookieHeader(
   currentHeader: string | null,
   setCookieValues: string[],
 ): string {
-  const cookies = parseCookieHeader(currentHeader)
+  return mergeCookieHeaderShared(currentHeader, setCookieValues, COOKIE_MAP)
+}
 
-  for (const setCookie of setCookieValues) {
-    const cookiePair = setCookie.split(";", 1)[0]
-    const separatorIndex = cookiePair.indexOf("=")
-    if (separatorIndex > 0) {
-      cookies.set(
-        dashboardCookieName(cookiePair.slice(0, separatorIndex).trim()),
-        cookiePair.slice(separatorIndex + 1).trim(),
-      )
-    }
-  }
-
-  return Array.from(cookies, ([name, value]) => `${name}=${value}`).join("; ")
+export function toBackendCookieHeader(header: string | null): string {
+  return toBackendCookieHeaderShared(header, COOKIE_MAP)
 }
 
 export async function requestBackend(
@@ -117,43 +70,41 @@ export async function requestBackend(
     body?: BodyInit | null
     contentType?: string | null
     userAgent?: string | null
+    timeoutMs?: number
   } = {},
 ): Promise<Response> {
   const headers = new Headers({ accept: "application/json" })
-  if (options.cookieHeader) {
-    headers.set("cookie", toBackendCookieHeader(options.cookieHeader))
-  }
   if (options.contentType) headers.set("content-type", options.contentType)
   if (options.userAgent) headers.set("user-agent", options.userAgent)
+  if (options.cookieHeader) {
+    headers.set(
+      "cookie",
+      toBackendCookieHeaderShared(options.cookieHeader, COOKIE_MAP),
+    )
+  }
 
-  return fetch(getBackendUrl(path), {
-    method: options.method ?? "GET",
-    cache: "no-store",
-    headers,
-    body: options.body,
-    signal: timeoutSignal(),
-  })
+  try {
+    return await fetchWithTimeout(getBackendUrl(path), {
+      method: options.method ?? "GET",
+      cache: "no-store",
+      headers,
+      body: options.body,
+      timeoutMs: options.timeoutMs ?? DEFAULT_PROXY_TIMEOUT_MS,
+    })
+  } catch {
+    return Response.json({ ok: false, message: "Backend unavailable" }, { status: 503 })
+  }
 }
 
 export async function forwardBackendRequest(request: Request, path: string) {
   const sourceUrl = new URL(request.url)
   const url = getBackendUrl(path)
   url.search = sourceUrl.search
-  const method = request.method.toUpperCase()
-  const headers = new Headers({ accept: "application/json" })
-  const cookie = request.headers.get("cookie")
-  const contentType = request.headers.get("content-type")
-  if (cookie) headers.set("cookie", toBackendCookieHeader(cookie))
-  if (contentType) headers.set("content-type", contentType)
-  const response = await fetch(url, {
-    method,
-    cache: "no-store",
-    headers,
-    body: method === "GET" || method === "HEAD" ? undefined : await request.arrayBuffer(),
-    signal: timeoutSignal(),
-  })
-  return new Response(await response.arrayBuffer(), {
-    status: response.status,
-    headers: { "content-type": response.headers.get("content-type") ?? "application/json" },
+  return streamBackendRequest({
+    request,
+    backendUrl: url,
+    method: request.method.toUpperCase(),
+    setCookieMap: COOKIE_MAP,
+    includeSetCookie: false,
   })
 }
