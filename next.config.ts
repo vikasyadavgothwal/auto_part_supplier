@@ -1,5 +1,4 @@
 import type { NextConfig } from "next";
-import path from "node:path";
 
 const externalRedirect = {
   basePath: false as const,
@@ -25,12 +24,6 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
-  turbopack: {
-    root: path.resolve(__dirname, ".."),
-  },
-  experimental: {
-    externalDir: true,
-  },
   poweredByHeader: false,
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
