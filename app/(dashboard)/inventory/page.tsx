@@ -10,16 +10,18 @@ export default async function InventoryPage() {
   const cookieHeader = requestHeaders.get("cookie")
   let products: Product[] = []
   let pagination: InventoryPagination = { page: 1, pageSize: 10, total: 0, totalPages: 1 }
+  let inactiveCount = 0
   let loadError: string | null = null
 
   try {
     const result = await getSupplierPartsFromBackend(cookieHeader)
     products = result.parts.map(mapSupplierPartToProduct)
     pagination = result.pagination
+    inactiveCount = result.inactiveCount
   } catch (error) {
     loadError =
       error instanceof Error ? error.message : "Unable to load supplier parts"
   }
 
-  return <InventoryPageContent initialProducts={products} initialPagination={pagination} loadError={loadError} />
+  return <InventoryPageContent initialProducts={products} initialPagination={pagination} initialInactiveCount={inactiveCount} loadError={loadError} />
 }

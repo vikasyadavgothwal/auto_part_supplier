@@ -21,7 +21,7 @@ export default async function PerformancePage() {
   let analytics = null
   let error: string | null = null
   try {
-    analytics = await getSupplierAnalytics(cookieHeader)
+    analytics = await getSupplierAnalytics(cookieHeader, "performance")
   } catch (caught) {
     error = caught instanceof Error ? caught.message : "Unable to load performance"
   }

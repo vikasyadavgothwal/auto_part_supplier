@@ -17,7 +17,7 @@ export default async function SupplierDashboard() {
   let analytics = null
   let error: string | null = null
   try {
-    analytics = await getSupplierAnalytics((await cookies()).toString())
+    analytics = await getSupplierAnalytics((await cookies()).toString(), "dashboard")
   } catch (caught) {
     error = caught instanceof Error ? caught.message : "Unable to load overview"
   }

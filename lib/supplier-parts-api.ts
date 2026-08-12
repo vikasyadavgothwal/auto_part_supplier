@@ -43,6 +43,7 @@ export async function getSupplierPartsFromBackend(cookieHeader?: string | null) 
   return {
     parts: payload.parts ?? [],
     pagination: payload.pagination ?? { page: 1, pageSize: 10, total: 0, totalPages: 1 },
+    inactiveCount: payload.inactiveCount ?? 0,
   }
 }
 

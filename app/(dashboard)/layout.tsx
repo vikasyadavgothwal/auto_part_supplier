@@ -14,8 +14,15 @@ type BusinessAccessPayload = {
   access?: Array<{
     businessAccount: { type: string; isOwner?: boolean; plan: { name: string; code: string } }
     visibleMenus: string[]
+    activeAddOns?: Array<{ featureKey: string }>
+    enabledFeatures?: string[]
   }>
 }
+
+const isApiFeature = (feature: string) => feature === "api.standard" || feature === "api.enterprise"
+
+const isFreePlan = (plan?: { code: string; name: string }) =>
+  plan?.code === "Free" || /\bfree\b/i.test(plan?.name ?? "")
 
 async function getBusinessAccess() {
   const response = await requestBackend("/api/v1/business/access", {
@@ -24,8 +31,13 @@ async function getBusinessAccess() {
   if (!response?.ok) return { visibleMenus: [], planName: null }
   const payload = (await response.json()) as BusinessAccessPayload
   const access = payload.access?.find((item) => item.businessAccount.type === "Supplier")
+  const freePlan = isFreePlan(access?.businessAccount.plan)
+  const hasApiAddOn = access?.activeAddOns?.some((item) => isApiFeature(item.featureKey)) ?? false
+  const hasPlanApiAccess =
+    !freePlan &&
+    (access?.enabledFeatures?.some(isApiFeature) ?? false)
   return {
-    visibleMenus: access?.visibleMenus ?? [],
+    visibleMenus: (access?.visibleMenus ?? []).filter((menu) => menu !== "api-keys" || hasPlanApiAccess || hasApiAddOn),
     planName: access?.businessAccount.plan.name ?? null,
     isOwner: access?.businessAccount.isOwner ?? false,
   }

@@ -46,17 +46,20 @@ export type SupplierAnalytics = {
   }>
 }
 
-export async function getSupplierAnalytics(cookieHeader: string) {
-  const response = await requestBackend("/api/v1/supplier/analytics", {
+export async function getSupplierAnalytics(
+  cookieHeader: string,
+  scope: "dashboard" | "performance" = "performance",
+) {
+  const response = await requestBackend(`/api/v1/supplier/analytics?scope=${scope}`, {
     cookieHeader,
   })
-  const payload = (await response.json()) as {
+  const payload = (await response.json().catch(() => null)) as {
     ok: boolean
     analytics?: SupplierAnalytics
     message?: string
-  }
-  if (!response.ok || !payload.ok || !payload.analytics) {
-    throw new Error(payload.message || "Unable to load supplier analytics")
+  } | null
+  if (!response.ok || !payload?.ok || !payload.analytics) {
+    throw new Error(payload?.message || "Unable to load supplier analytics")
   }
   return payload.analytics
 }

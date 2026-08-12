@@ -105,10 +105,17 @@ export function BulkImportDialog({
       const nextSummary = payload.summary as ProductBulkUploadSummary
       setSummary(nextSummary)
       setUpgradeHint(null)
+      const updatedCount = Math.max(
+        nextSummary.stockUpdatedCount ?? 0,
+        nextSummary.pricingUpdatedCount ?? 0,
+      )
+      const message = updatedCount > 0
+        ? `${updatedCount} existing product${updatedCount === 1 ? "" : "s"} updated successfully${nextSummary.unmappedCount > 0 ? ` and ${nextSummary.unmappedCount} product${nextSummary.unmappedCount === 1 ? "" : "s"} not mapped.` : "."}`
+        : `${nextSummary.mappedCount} product${nextSummary.mappedCount === 1 ? "" : "s"} mapped and ${nextSummary.unmappedCount} product${nextSummary.unmappedCount === 1 ? "" : "s"} not mapped.`
       showToast({
         type: "success",
         title: "Workbook Processed",
-        message: `${nextSummary.mappedCount} product${nextSummary.mappedCount === 1 ? "" : "s"} mapped and ${nextSummary.unmappedCount} product${nextSummary.unmappedCount === 1 ? "" : "s"} not mapped.`,
+        message,
       })
       onProductsImported(
         nextSummary.mappedParts.map(mapSupplierPartToProduct),

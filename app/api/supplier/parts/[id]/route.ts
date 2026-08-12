@@ -12,3 +12,14 @@ export async function PATCH(
     `/api/v1/supplier/parts/${encodeURIComponent(id)}`,
   )
 }
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const { id } = await params
+  return forwardSupplierBackendRequest(
+    request,
+    `/api/v1/supplier/parts/${encodeURIComponent(id)}`,
+  )
+}

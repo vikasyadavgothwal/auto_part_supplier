@@ -129,16 +129,14 @@ export function AppSidebar({
               className="group mt-4 block rounded-lg border border-primary/25 bg-background/70 p-3 shadow-[0_14px_34px_rgba(0,0,0,0.20)] transition hover:border-primary/50 hover:bg-muted/40"
             >
               <div className="flex items-center justify-between gap-3">
-                <span className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  <span className="flex h-7 w-7 items-center justify-center rounded-md border border-primary/25 bg-primary/10 text-primary">
-                    <BadgeCheck className="h-4 w-4" />
-                  </span>
-                  Current plan
+              <span className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                <span className="flex h-7 w-7 items-center justify-center rounded-md border border-primary/25 bg-primary/10 text-primary">
+                  <BadgeCheck className="h-4 w-4" />
                 </span>
-                <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_0_4px_rgba(52,211,153,0.12)]" />
-              </div>
-              <p className="mt-3 truncate text-sm font-semibold text-foreground">{planName}</p>
-              <p className="mt-1 text-xs text-muted-foreground group-hover:text-foreground/80">Manage or upgrade</p>
+                  {planName}
+              </span>
+              <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_0_4px_rgba(52,211,153,0.12)]" />
+            </div>
             </Link>
           ) : null}
         </SidebarHeader>

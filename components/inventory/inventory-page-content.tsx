@@ -30,22 +30,23 @@ import type {
 type Props = {
   initialProducts: Product[]
   initialPagination: InventoryPagination
+  initialInactiveCount: number
   loadError?: string | null
 }
 
 export function InventoryPageContent({
   initialProducts,
   initialPagination,
+  initialInactiveCount,
   loadError = null,
 }: Props) {
   const { showToast } = useToast()
   const [products, setProducts] = useState(initialProducts)
   const [pagination, setPagination] = useState(initialPagination)
+  const [inactiveProductCount, setInactiveProductCount] = useState(initialInactiveCount)
   const [searchQuery, setSearchQuery] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  const [isExportingCatalogue, setIsExportingCatalogue] = useState(false)
-  const [isExportingInventory, setIsExportingInventory] = useState(false)
-  const [isExportingCsv, setIsExportingCsv] = useState(false)
+  const [isExportingExcel, setIsExportingExcel] = useState(false)
   const [productsError, setProductsError] = useState("")
   const [isProductFormOpen, setIsProductFormOpen] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
@@ -56,7 +57,6 @@ export function InventoryPageContent({
   const lowStockCount = products.filter(
     (product) => product.isActive && product.stock > 0 && product.stock <= 12,
   ).length
-  const inactiveProductCount = products.filter((product) => !product.isActive).length
 
   async function loadProducts(page: number, query = searchQuery) {
     setIsLoading(true)
@@ -80,6 +80,7 @@ export function InventoryPageContent({
       }
       setProducts(payload.parts.map(mapSupplierPartToProduct))
       setPagination(payload.pagination)
+      setInactiveProductCount(payload.inactiveCount ?? 0)
     } catch (error) {
       setProductsError(
         error instanceof Error ? error.message : "Unable to load inventory",
@@ -174,47 +175,17 @@ export function InventoryPageContent({
             <Button
               variant="outline"
               className="h-12 rounded-sm px-6"
-              disabled={isExportingCatalogue}
+              disabled={isExportingExcel}
               onClick={() =>
                 void downloadExport(
                   "/api/supplier/parts/export/products/catalogue",
-                  "supplier-products-catalogue.xlsx",
-                  setIsExportingCatalogue,
+                  "supplier-product-master.xlsx",
+                  setIsExportingExcel,
                 )
               }
             >
               <Download className="mr-2 size-5" />
-              {isExportingCatalogue ? "Exporting..." : "Export Products"}
-            </Button>
-            <Button
-              variant="outline"
-              className="h-12 rounded-sm px-6"
-              disabled={isExportingInventory}
-              onClick={() =>
-                void downloadExport(
-                  "/api/supplier/parts/export/inventory/stock-prices",
-                  "supplier-stock-prices.xlsx",
-                  setIsExportingInventory,
-                )
-              }
-            >
-              <Download className="mr-2 size-5" />
-              {isExportingInventory ? "Exporting..." : "Export Stock & Prices"}
-            </Button>
-            <Button
-              variant="outline"
-              className="h-12 rounded-sm px-6"
-              disabled={isExportingCsv}
-              onClick={() =>
-                void downloadExport(
-                  "/api/supplier/parts/export/products/csv",
-                  "supplier-product-master.csv",
-                  setIsExportingCsv,
-                )
-              }
-            >
-              <Download className="mr-2 size-5" />
-              {isExportingCsv ? "Exporting..." : "Export CSV"}
+              {isExportingExcel ? "Exporting..." : "Export Excel"}
             </Button>
             <Button
               variant="outline"

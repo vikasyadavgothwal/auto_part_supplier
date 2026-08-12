@@ -93,6 +93,7 @@ export type SupplierPartsListResponse = {
   ok: boolean
   parts?: SupplierPartApiRecord[]
   pagination?: InventoryPagination
+  inactiveCount?: number
   message?: string
 }
 

@@ -15,6 +15,7 @@ export async function POST(request: NextRequest) {
     body: await request.text(),
     contentType: "application/json",
     userAgent: request.headers.get("user-agent"),
+    timeoutMs: 60_000,
   })
   const response = new NextResponse(await backend.text(), {
     status: backend.status,
