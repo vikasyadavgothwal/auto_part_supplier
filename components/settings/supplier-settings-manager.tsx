@@ -107,6 +107,23 @@ const DEFAULT_MOBILE_COUNTRY_CODE = "+971"
 const normalizeDigits = (value: string, maxLength = 14) =>
   value.replace(/\D/g, "").slice(0, maxLength)
 
+const readJsonResponse = async <T,>(
+  response: Response,
+  fallbackMessage: string,
+): Promise<T> => {
+  const text = await response.text()
+
+  try {
+    return JSON.parse(text) as T
+  } catch {
+    throw new Error(
+      response.status === 413
+        ? "Upload is too large. Choose a smaller file and try again."
+        : fallbackMessage,
+    )
+  }
+}
+
 const parseMobileNumber = (value: string) => {
   const compact = value.replace(/[^\d+]/g, "")
   const countryCode =
@@ -649,7 +666,10 @@ export function SupplierSettingsManager({
         "/api/supplier/settings/documents",
         { method: "POST", body },
       )
-      const payload = (await response.json()) as DocumentUploadPayload
+      const payload = await readJsonResponse<DocumentUploadPayload>(
+        response,
+        "Unable to upload document",
+      )
       if (!response.ok || !payload.ok || !payload.documentUrl) {
         throw new Error(payload.message || "Unable to upload document")
       }
@@ -740,7 +760,10 @@ export function SupplierSettingsManager({
         method: "POST",
         body,
       })
-      const payload = (await response.json()) as SupplierSettingsPayload
+      const payload = await readJsonResponse<SupplierSettingsPayload>(
+        response,
+        "Unable to upload supplier image",
+      )
       if (!response.ok || !payload.ok || !payload.profile) {
         throw new Error(payload.message || "Unable to upload supplier image")
       }
