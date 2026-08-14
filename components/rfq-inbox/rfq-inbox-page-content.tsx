@@ -118,7 +118,7 @@ export function RfqInboxPageContent({ initialRfqs, initialPagination }: { initia
         />
 
         <form className="flex max-w-2xl gap-2" onSubmit={(event) => { event.preventDefault(); void load(1) }}>
-          <div className="relative flex-1"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-brand-muted" /><Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search RFQ ID, buyer, project, vehicle, VIN, or part..." className="pl-9" /></div>
+          <div className="relative flex-1"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-brand-muted" /><Input value={search} onChange={(event) => setSearch(event.target.value.slice(0, 120))} maxLength={120} placeholder="Search RFQ ID, buyer, project, vehicle, VIN, or part..." className="pl-9" /></div>
           <Button type="submit" disabled={loading}>Search</Button>
           {search ? <Button type="button" variant="outline" onClick={() => { setSearch(""); void load(1, "") }}>Clear</Button> : null}
         </form>

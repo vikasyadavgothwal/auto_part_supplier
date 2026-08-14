@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation"
 import { Search, Trash2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { useToast } from "@/components/ui/toast-provider"
 import { appPath, appRoutes } from "@/lib/routes"
 
 type SavedSearch = {
@@ -60,6 +61,7 @@ export function SupplierSavedSearchesPage({
   initialSavedSearches: SavedSearch[]
 }) {
   const router = useRouter()
+  const { showToast } = useToast()
   const [name, setName] = useState("")
   const [scope, setScope] = useState<(typeof scopeOptions)[number]["value"]>("supplier.inventory")
   const [queryText, setQueryText] = useState("")
@@ -70,8 +72,27 @@ export function SupplierSavedSearchesPage({
 
   async function saveSearch(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    const normalizedName = name.trim()
+    const normalizedQuery = queryText.trim()
+    if (!normalizedName) {
+      showToast({ type: "error", title: "Validation Error", message: "Name is required." })
+      setMessage("Name is required.")
+      return
+    }
+    if (normalizedName.length > 80) {
+      showToast({ type: "error", title: "Validation Error", message: "Name cannot exceed 80 characters." })
+      setMessage("Name cannot exceed 80 characters.")
+      return
+    }
+    if (normalizedQuery.length > 200) {
+      showToast({ type: "error", title: "Validation Error", message: "Search text cannot exceed 200 characters." })
+      setMessage("Search text cannot exceed 200 characters.")
+      return
+    }
     if (!accountId || !canSave) {
-      setMessage(access?.actions?.["saved-searches.create"]?.reason ?? "Saved searches are not available on this plan.")
+      const planMessage = access?.actions?.["saved-searches.create"]?.reason ?? "Saved searches are not available on this plan."
+      showToast({ type: "error", title: "Unable to save search", message: planMessage })
+      setMessage(planMessage)
       return
     }
     setIsSaving(true)
@@ -80,16 +101,19 @@ export function SupplierSavedSearchesPage({
       const response = await fetch(appPath("/api/business/saved-searches"), {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ businessAccountId: accountId, name, scope, query: { q: queryText.trim() } }),
+        body: JSON.stringify({ businessAccountId: accountId, name: normalizedName, scope, query: { q: normalizedQuery } }),
       })
       const payload = await response.json().catch(() => null) as { message?: string } | null
       if (!response.ok) throw new Error(payload?.message ?? "Unable to save search")
       setName("")
       setQueryText("")
       setMessage("Saved search created.")
+      showToast({ type: "success", title: "Saved search created", message: "Saved search created successfully." })
       router.refresh()
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Unable to save search")
+      const errorMessage = error instanceof Error ? error.message : "Unable to save search"
+      setMessage(errorMessage)
+      showToast({ type: "error", title: "Unable to save search", message: errorMessage })
     } finally {
       setIsSaving(false)
     }
@@ -103,10 +127,13 @@ export function SupplierSavedSearchesPage({
     )
     if (!response.ok) {
       const payload = await response.json().catch(() => null) as { message?: string } | null
-      setMessage(payload?.message ?? "Unable to delete saved search")
+      const errorMessage = payload?.message ?? "Unable to delete saved search"
+      setMessage(errorMessage)
+      showToast({ type: "error", title: "Unable to delete saved search", message: errorMessage })
       return
     }
     setMessage("Saved search deleted.")
+    showToast({ type: "success", title: "Saved search deleted", message: "Saved search deleted successfully." })
     router.refresh()
   }
 
@@ -123,11 +150,11 @@ export function SupplierSavedSearchesPage({
       <section className="rounded-lg border bg-card p-4">
         <h2 className="text-lg font-semibold">Create saved search</h2>
         <form onSubmit={saveSearch} className="mt-4 grid gap-3 md:grid-cols-[1fr_180px_1fr_auto]">
-          <input className="h-10 rounded-sm border bg-background px-3" placeholder="Name" value={name} onChange={(event) => setName(event.target.value)} required />
+          <input className="h-10 rounded-sm border bg-background px-3" placeholder="Name" value={name} onChange={(event) => setName(event.target.value.slice(0, 80))} maxLength={80} required />
           <select className="h-10 rounded-sm border bg-background px-3" value={scope} onChange={(event) => setScope(event.target.value as typeof scope)}>
             {scopeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
           </select>
-          <input className="h-10 rounded-sm border bg-background px-3" placeholder="Search text or filter keyword" value={queryText} onChange={(event) => setQueryText(event.target.value)} />
+          <input className="h-10 rounded-sm border bg-background px-3" placeholder="Search text or filter keyword" value={queryText} onChange={(event) => setQueryText(event.target.value.slice(0, 200))} maxLength={200} />
           <Button type="submit" disabled={isSaving || !canSave}>{isSaving ? "Saving..." : "Save"}</Button>
         </form>
         {!canSave ? <p className="mt-3 text-sm text-amber-600">{access?.actions?.["saved-searches.create"]?.reason ?? "Upgrade your plan to save searches."}</p> : null}

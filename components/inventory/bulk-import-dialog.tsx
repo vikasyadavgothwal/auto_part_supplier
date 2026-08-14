@@ -36,6 +36,9 @@ type BulkImportDialogProps = {
   onProductsImported: (products: Product[]) => void
 }
 
+const MAX_FILE_BYTES = 10 * 1024 * 1024
+const allowedExtensions = new Set(["csv", "xlsx"])
+
 const downloadUnmapped = (base64: string) => {
   const bytes = Uint8Array.from(atob(base64), (character) =>
     character.charCodeAt(0),
@@ -84,8 +87,23 @@ export function BulkImportDialog({
       showToast({ type: "error", title: "Validation Error", message })
       return
     }
+    if (selectedFile.size > MAX_FILE_BYTES) {
+      const message = "The workbook must be 10 MB or smaller."
+      setError(message)
+      setSummary(null)
+      showToast({ type: "error", title: "Validation Error", message })
+      return
+    }
+    const extension = selectedFile.name.split(".").pop()?.toLowerCase() ?? ""
+    if (!allowedExtensions.has(extension)) {
+      const message = "Upload a Product Master XLSX or CSV file."
+      setError(message)
+      setSummary(null)
+      showToast({ type: "error", title: "Validation Error", message })
+      return
+    }
 
-    const isCsv = selectedFile.name.toLowerCase().endsWith(".csv")
+    const isCsv = extension === "csv"
     const uploadData = new FormData()
     uploadData.set("mode", "products")
     uploadData.set(isCsv ? "productFile" : "workbookFile", selectedFile)

@@ -228,7 +228,8 @@ export function OffersPageContent({
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-brand-muted" />
               <Input
                 value={search}
-                onChange={(event) => setSearch(event.target.value)}
+                onChange={(event) => setSearch(event.target.value.slice(0, 120))}
+                maxLength={120}
                 placeholder="Search offer, RFQ, buyer, project, vehicle, or part..."
                 className="pl-9"
               />

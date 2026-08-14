@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, type FormEvent } from "react"
+import { useState, type FormEvent, type KeyboardEvent } from "react"
 import { CircleCheck, TriangleAlert } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -92,6 +92,19 @@ const numberFields = new Set(
     group.fields.filter((field) => field.type === "number").map((field) => field.key),
   ),
 )
+const integerFields = new Set([
+  "Vehicle Fitment | Year_Start",
+  "Vehicle Fitment | Year_End",
+  "Product Inventory | Quantity",
+  "Product Inventory | Low Stock Threshold",
+  "Product Bundles | Quantity in Bundle",
+  "Product Bundles | Quantity as Component",
+  "Compliance | Warranty Period (Months)",
+  "Marketplace Settings | Max Order Quantity",
+])
+const imageTypes = new Set(["image/jpeg", "image/png", "image/webp"])
+const maxImageSize = 5 * 1024 * 1024
+const maxImageFiles = 8
 
 const validateUrl = (value: string, label: string) => {
   if (!value) return ""
@@ -117,6 +130,9 @@ const validateFormData = (data: FormData) => {
     if (!Number.isFinite(number) || number < 0) {
       return `${key} must be a valid non-negative number`
     }
+    if (integerFields.has(key) && !Number.isInteger(number)) {
+      return `${key} must be a whole number`
+    }
   }
   const basePrice = Number(get("Product Pricing | Base Price (AED)"))
   if (!Number.isFinite(basePrice) || basePrice <= 0) {
@@ -125,6 +141,13 @@ const validateFormData = (data: FormData) => {
   const quantity = Number(get("Product Inventory | Quantity"))
   if (!Number.isInteger(quantity) || quantity < 0) {
     return "Product Inventory | Quantity must be a whole number"
+  }
+  const maxOrderQuantity = get("Marketplace Settings | Max Order Quantity")
+  if (maxOrderQuantity) {
+    const maxOrderQuantityNumber = Number(maxOrderQuantity)
+    if (!Number.isInteger(maxOrderQuantityNumber) || maxOrderQuantityNumber < 0) {
+      return "Marketplace Settings | Max Order Quantity must be a whole number"
+    }
   }
   const yearStart = get("Vehicle Fitment | Year_Start")
   const yearEnd = get("Vehicle Fitment | Year_End")
@@ -141,7 +164,25 @@ const validateFormData = (data: FormData) => {
     "Product Documents | Document URL",
   )
   if (documentUrlError) return documentUrlError
+  const galleryUrls = list(get("Product Images | Gallery Image URLs"))
+  for (const url of galleryUrls) {
+    const galleryUrlError = validateUrl(url, "Product Images | Gallery Image URLs")
+    if (galleryUrlError) return galleryUrlError
+  }
   return ""
+}
+
+const validateImageFiles = (files: File[]) => {
+  if (files.length > maxImageFiles) return `Upload no more than ${maxImageFiles} product images`
+  for (const file of files) {
+    if (!imageTypes.has(file.type)) return "Images must be JPG, PNG, or WebP"
+    if (file.size > maxImageSize) return "Each product image must be 5 MB or smaller"
+  }
+  return ""
+}
+
+const preventInvalidNumberKey = (event: KeyboardEvent<HTMLInputElement>) => {
+  if (["e", "E", "+", "-"].includes(event.key)) event.preventDefault()
 }
 
 export function ProductMasterForm({ open, onOpenChange, product, onSaved }: {
@@ -177,6 +218,8 @@ export function ProductMasterForm({ open, onOpenChange, product, onSaved }: {
       let storedUrls = product?.imageUrls ?? []
       const files = data.getAll("imageFiles").filter((item): item is File => item instanceof File && item.size > 0)
       if (files.length) {
+        const fileError = validateImageFiles(files)
+        if (fileError) throw new Error(fileError)
         const upload = new FormData(); files.forEach((file) => upload.append("images", file))
         const response = await authenticatedFetch("/api/supplier/parts/images", { method: "POST", body: upload })
         const result = await readJsonResponse<{ ok: boolean; images?: Array<{url:string}>; message?: string }>(response, "Unable to upload images")
@@ -230,13 +273,13 @@ export function ProductMasterForm({ open, onOpenChange, product, onSaved }: {
             <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {group.fields.map((field) => <div key={field.key} className={`min-w-0 space-y-2 ${field.wide ? "sm:col-span-2 lg:col-span-3" : ""}`}>
                 <Label htmlFor={`pm-${field.key}`}>{field.label ?? field.key}{field.required ? " *" : ""}</Label>
-                {field.type === "textarea" ? <textarea id={`pm-${field.key}`} name={field.key} defaultValue={value(field.key, fallback[field.key])} className="min-h-24 w-full rounded-sm border border-input bg-transparent px-3 py-2 text-sm outline-none focus:border-ring focus:ring-3 focus:ring-ring/50" /> : <Input id={`pm-${field.key}`} name={field.key} type={field.type ?? "text"} min={field.type === "number" ? "0" : undefined} step={field.type === "number" ? "any" : undefined} defaultValue={value(field.key, fallback[field.key])} />}
+                {field.type === "textarea" ? <textarea id={`pm-${field.key}`} name={field.key} defaultValue={value(field.key, fallback[field.key])} maxLength={2000} className="min-h-24 w-full rounded-sm border border-input bg-transparent px-3 py-2 text-sm outline-none focus:border-ring focus:ring-3 focus:ring-ring/50" /> : <Input id={`pm-${field.key}`} name={field.key} type={field.type ?? "text"} min={field.type === "number" ? "0" : undefined} step={field.type === "number" ? integerFields.has(field.key) ? "1" : "any" : undefined} inputMode={field.type === "number" ? integerFields.has(field.key) ? "numeric" : "decimal" : undefined} onKeyDown={field.type === "number" ? preventInvalidNumberKey : undefined} maxLength={field.type === "number" ? undefined : 255} defaultValue={value(field.key, fallback[field.key])} />}
               </div>)}
             </div>
           </section>)}
           <section className="rounded-sm border border-border bg-brand-surface p-4 sm:p-5"><h3 className="font-semibold">Marketplace settings & image upload</h3>
             <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {["Marketplace Settings | Allow Backorders (Yes/No)","Marketplace Settings | Max Order Quantity","Marketplace Settings | Is Active (Yes/No)"].map((key) => <div key={key} className="space-y-2"><Label htmlFor={`pm-${key}`}>{key}</Label><Input id={`pm-${key}`} name={key} defaultValue={value(key, key.includes("Is Active") ? "Yes" : key.includes("Backorders") ? "No" : "")} /></div>)}
+              {["Marketplace Settings | Allow Backorders (Yes/No)","Marketplace Settings | Max Order Quantity","Marketplace Settings | Is Active (Yes/No)"].map((key) => <div key={key} className="space-y-2"><Label htmlFor={`pm-${key}`}>{key}</Label><Input id={`pm-${key}`} name={key} type={key.includes("Max Order") ? "number" : "text"} min={key.includes("Max Order") ? "0" : undefined} step={key.includes("Max Order") ? "1" : undefined} inputMode={key.includes("Max Order") ? "numeric" : undefined} onKeyDown={key.includes("Max Order") ? preventInvalidNumberKey : undefined} maxLength={key.includes("Max Order") ? undefined : 3} defaultValue={value(key, key.includes("Is Active") ? "Yes" : key.includes("Backorders") ? "No" : "")} /></div>)}
               <div className="space-y-2 sm:col-span-2 lg:col-span-3"><Label htmlFor="pm-images">Upload product images</Label><Input id="pm-images" name="imageFiles" type="file" accept="image/jpeg,image/png,image/webp" multiple /><p className="text-xs text-brand-muted">Optional. JPG, PNG or WebP; maximum 8 files and 5 MB each.</p></div>
             </div>
           </section>

@@ -47,6 +47,8 @@ type RoleItem = {
   permissionIds: string[]
 }
 
+const roleNamePattern = /^[A-Za-z0-9][A-Za-z0-9\s._/-]*$/
+
 function statusText(access: BusinessAccessEntry | undefined) {
   const action = access?.actions?.["roles.create"]
   if (action && action.allowed === false) {
@@ -180,6 +182,32 @@ export function SupplierRolesPage({
       showToast({ type: "error", title: "Error", message: unableMessage })
       return
     }
+    const normalizedName = name.trim()
+    const normalizedDescription = description.trim()
+    if (normalizedName.length < 3 || normalizedName.length > 80) {
+      const errorMessage = "Role name must be between 3 and 80 characters."
+      setMessage(errorMessage)
+      showToast({ type: "error", title: "Validation Error", message: errorMessage })
+      return
+    }
+    if (!roleNamePattern.test(normalizedName)) {
+      const errorMessage = "Role name contains invalid characters."
+      setMessage(errorMessage)
+      showToast({ type: "error", title: "Validation Error", message: errorMessage })
+      return
+    }
+    if (normalizedDescription.length > 240) {
+      const errorMessage = "Description cannot exceed 240 characters."
+      setMessage(errorMessage)
+      showToast({ type: "error", title: "Validation Error", message: errorMessage })
+      return
+    }
+    if (!selectedPermissionIds.length) {
+      const errorMessage = "Select at least one permission."
+      setMessage(errorMessage)
+      showToast({ type: "error", title: "Validation Error", message: errorMessage })
+      return
+    }
 
     setSubmitting(true)
     setMessage(null)
@@ -189,8 +217,8 @@ export function SupplierRolesPage({
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           businessAccountId: access.businessAccount?.id,
-          name,
-          description,
+          name: normalizedName,
+          description: normalizedDescription,
           permissionIds: selectedPermissionIds,
         }),
       })
@@ -219,6 +247,32 @@ export function SupplierRolesPage({
     if (!editingRole || !access?.businessAccount?.id) {
       return
     }
+    const normalizedName = name.trim()
+    const normalizedDescription = description.trim()
+    if (normalizedName.length < 3 || normalizedName.length > 80) {
+      const errorMessage = "Role name must be between 3 and 80 characters."
+      setMessage(errorMessage)
+      showToast({ type: "error", title: "Validation Error", message: errorMessage })
+      return
+    }
+    if (!roleNamePattern.test(normalizedName)) {
+      const errorMessage = "Role name contains invalid characters."
+      setMessage(errorMessage)
+      showToast({ type: "error", title: "Validation Error", message: errorMessage })
+      return
+    }
+    if (normalizedDescription.length > 240) {
+      const errorMessage = "Description cannot exceed 240 characters."
+      setMessage(errorMessage)
+      showToast({ type: "error", title: "Validation Error", message: errorMessage })
+      return
+    }
+    if (!selectedPermissionIds.length) {
+      const errorMessage = "Select at least one permission."
+      setMessage(errorMessage)
+      showToast({ type: "error", title: "Validation Error", message: errorMessage })
+      return
+    }
     setSubmitting(true)
     setMessage(null)
     try {
@@ -228,8 +282,8 @@ export function SupplierRolesPage({
           method: "PATCH",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({
-            name,
-            description,
+            name: normalizedName,
+            description: normalizedDescription,
             permissionIds: selectedPermissionIds,
           }),
         },
@@ -323,7 +377,8 @@ export function SupplierRolesPage({
         </div>
         <Input
           value={searchQuery}
-          onChange={(event) => setSearchQuery(event.target.value)}
+          onChange={(event) => setSearchQuery(event.target.value.slice(0, 100))}
+          maxLength={100}
           placeholder="Search roles"
           className="mt-4 max-w-sm"
         />
@@ -390,7 +445,9 @@ export function SupplierRolesPage({
                 type="text"
                 required
                 value={name}
-                onChange={(event) => setName(event.target.value)}
+                onChange={(event) => setName(event.target.value.slice(0, 80))}
+                minLength={3}
+                maxLength={80}
                 placeholder="Operations lead"
               />
             </div>
@@ -399,7 +456,8 @@ export function SupplierRolesPage({
               <textarea
                 id="supplier-role-description"
                 value={description}
-                onChange={(event) => setDescription(event.target.value)}
+                onChange={(event) => setDescription(event.target.value.slice(0, 240))}
+                maxLength={240}
                 className="min-h-16 rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 placeholder="Role purpose"
               />
@@ -424,7 +482,7 @@ export function SupplierRolesPage({
                   <div className="space-y-3 p-3">
                     <div className="relative">
                       <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                      <Input value={permissionQuery} onChange={(event) => setPermissionQuery(event.target.value)} placeholder="Search permissions by name or code" className="h-10 bg-background pl-9" />
+                      <Input value={permissionQuery} onChange={(event) => setPermissionQuery(event.target.value.slice(0, 100))} maxLength={100} placeholder="Search permissions by name or code" className="h-10 bg-background pl-9" />
                     </div>
                     <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
                       <span>{filteredPermissions.length} permission{filteredPermissions.length === 1 ? "" : "s"} shown</span>

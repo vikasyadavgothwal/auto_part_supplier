@@ -90,6 +90,9 @@ const TRADE_LICENSE_MAX_LENGTH = 30
 const VAT_TRN_MIN_LENGTH = 10
 const VAT_TRN_MAX_LENGTH = 20
 const BANK_IBAN_MAX_LENGTH = 34
+const PASSWORD_MIN_LENGTH = 8
+const PASSWORD_MAX_LENGTH = 128
+const PASSWORD_PATTERN = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/
 const MOBILE_COUNTRY_CODES = [
   { code: "+971", label: "UAE" },
   { code: "+91", label: "India" },
@@ -243,6 +246,12 @@ type SupplierDocumentField =
 const supplierDocumentUrl = (field: SupplierDocumentField) =>
   `/api/supplier/settings/documents?field=${encodeURIComponent(field)}`
 
+const RequiredMark = () => (
+  <span aria-hidden="true" className="text-destructive">
+    {" *"}
+  </span>
+)
+
 const validateDocumentFile = async (file: File) => {
   if (!DOCUMENT_TYPES.includes(file.type)) {
     return DOCUMENT_REQUIREMENTS
@@ -278,12 +287,16 @@ function DocumentUploadField({
     event: ChangeEvent<HTMLInputElement>,
   ) => void
 }) {
+  const isRequired = label.endsWith(" *")
+  const displayLabel = isRequired ? label.slice(0, -2) : label
+
   return (
     <div className="rounded-sm border border-border bg-brand-surface/70 p-4">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 space-y-1">
           <Label htmlFor={`document-${kind}`} className="text-foreground">
-            {label}
+            {displayLabel}
+            {isRequired ? <RequiredMark /> : null}
           </Label>
           <p className="text-xs leading-5 text-muted-foreground">
             {DOCUMENT_REQUIREMENTS}
@@ -514,6 +527,11 @@ export function SupplierSettingsManager({
   }
 
   const validateAddressSection = () => {
+    if (!form.addressLine1.trim()) return "Address line 1 is required"
+    if (!form.city.trim()) return "City is required"
+    if (!form.state.trim()) return "State is required"
+    if (!form.postalCode.trim()) return "Postal code is required"
+    if (!form.country.trim()) return "Country is required"
     for (const [key, limit] of Object.entries(ADDRESS_LIMITS)) {
       const value = form[key as keyof typeof ADDRESS_LIMITS]
       if (value.length > limit) {
@@ -818,12 +836,28 @@ export function SupplierSettingsManager({
       showFeedback("error", "Validation Error", "Current password is required")
       return
     }
-    if (newPassword.length < 8 || newPassword.length > 128) {
+    if (!passwordForm.confirmPassword) {
+      showFeedback("error", "Validation Error", "Confirm password is required")
+      return
+    }
+    if (newPassword.length < PASSWORD_MIN_LENGTH || newPassword.length > PASSWORD_MAX_LENGTH) {
       showFeedback(
         "error",
         "Validation Error",
-        "New password must be between 8 and 128 characters",
+        `New password must be between ${PASSWORD_MIN_LENGTH} and ${PASSWORD_MAX_LENGTH} characters`,
       )
+      return
+    }
+    if (!PASSWORD_PATTERN.test(newPassword)) {
+      showFeedback(
+        "error",
+        "Validation Error",
+        "New password must include uppercase, lowercase, and number characters",
+      )
+      return
+    }
+    if (newPassword === currentPassword) {
+      showFeedback("error", "Validation Error", "New password must be different from current password")
       return
     }
     if (newPassword !== passwordForm.confirmPassword) {
@@ -1108,7 +1142,7 @@ export function SupplierSettingsManager({
 
           <div className="grid gap-6 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="company-name">Company Name</Label>
+              <Label htmlFor="company-name">Company Name<RequiredMark /></Label>
               <Input
                 id="company-name"
                 value={form.companyName}
@@ -1158,9 +1192,10 @@ export function SupplierSettingsManager({
                 id="ops-email"
                 type="email"
                 value={form.email}
-                onChange={(event) => setField("email", event.target.value)}
+                onChange={(event) => setField("email", event.target.value.slice(0, 254))}
                 autoComplete="email"
                 placeholder="operations@example.com"
+                maxLength={254}
                 className="border-border bg-brand-surface md:max-w-xl"
               />
               {!emailVerified ? (
@@ -1324,7 +1359,7 @@ export function SupplierSettingsManager({
         <CardContent className="grid gap-6 md:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="authorized-contact-person">
-              Authorized Person Name
+              Authorized Person Name<RequiredMark />
             </Label>
             <Input
               id="authorized-contact-person"
@@ -1337,7 +1372,7 @@ export function SupplierSettingsManager({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="authorized-designation">Designation</Label>
+            <Label htmlFor="authorized-designation">Designation<RequiredMark /></Label>
             <Input
               id="authorized-designation"
               value={form.designation}
@@ -1415,7 +1450,7 @@ export function SupplierSettingsManager({
         <CardContent className="space-y-6">
           <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)]">
             <div className="space-y-2">
-              <Label htmlFor="trade-license-number">Trade License Number</Label>
+              <Label htmlFor="trade-license-number">Trade License Number<RequiredMark /></Label>
               <Input
                 id="trade-license-number"
                 value={form.tradeLicenseNumber}
@@ -1431,7 +1466,7 @@ export function SupplierSettingsManager({
             <DocumentUploadField
               field="tradeLicenseImageUrl"
               kind="trade-license"
-              label="Trade License Document"
+              label="Trade License Document *"
               value={form.tradeLicenseImageUrl}
               pendingFileName={
                 pendingDocumentUploads.tradeLicenseImageUrl?.fileName
@@ -1443,7 +1478,7 @@ export function SupplierSettingsManager({
 
           <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)]">
             <div className="space-y-2">
-              <Label htmlFor="vat-trn-number">VAT TRN Number</Label>
+              <Label htmlFor="vat-trn-number">VAT TRN Number<RequiredMark /></Label>
               <Input
                 id="vat-trn-number"
                 value={form.vatTrnNumber}
@@ -1457,7 +1492,7 @@ export function SupplierSettingsManager({
             <DocumentUploadField
               field="vatTrnImageUrl"
               kind="vat"
-              label="VAT Certificate Document"
+              label="VAT Certificate Document *"
               value={form.vatTrnImageUrl}
               pendingFileName={pendingDocumentUploads.vatTrnImageUrl?.fileName}
               disabled={uploadingDocumentField === "vatTrnImageUrl"}
@@ -1467,7 +1502,7 @@ export function SupplierSettingsManager({
 
           <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)]">
             <div className="space-y-2">
-              <Label htmlFor="identity-document-type">Identity Document</Label>
+              <Label htmlFor="identity-document-type">Identity Document<RequiredMark /></Label>
               <select
                 id="identity-document-type"
                 value={form.supplierIdentityDocumentType}
@@ -1486,7 +1521,7 @@ export function SupplierSettingsManager({
                   <DocumentUploadField
                     field="emiratesIdPassportUrl"
                     kind="passport-main"
-                    label="Passport Photo Page"
+                    label="Passport Photo Page *"
                     value={form.emiratesIdPassportUrl}
                     pendingFileName={
                       pendingDocumentUploads.emiratesIdPassportUrl?.fileName
@@ -1497,7 +1532,7 @@ export function SupplierSettingsManager({
                   <DocumentUploadField
                     field="passportAddressUrl"
                     kind="passport-address"
-                    label="Passport Address Page"
+                    label="Passport Address Page *"
                     value={form.passportAddressUrl}
                     pendingFileName={
                       pendingDocumentUploads.passportAddressUrl?.fileName
@@ -1508,7 +1543,7 @@ export function SupplierSettingsManager({
                   <DocumentUploadField
                     field="passportVisaFrontUrl"
                     kind="passport-visa-front"
-                    label="Visa Front Photo"
+                    label="Visa Front Photo *"
                     value={form.passportVisaFrontUrl}
                     pendingFileName={
                       pendingDocumentUploads.passportVisaFrontUrl?.fileName
@@ -1522,7 +1557,7 @@ export function SupplierSettingsManager({
                   <DocumentUploadField
                     field="emiratesIdPassportUrl"
                     kind="emirates-id-front"
-                    label="Emirates ID Front"
+                    label="Emirates ID Front *"
                     value={form.emiratesIdPassportUrl}
                     pendingFileName={
                       pendingDocumentUploads.emiratesIdPassportUrl?.fileName
@@ -1533,7 +1568,7 @@ export function SupplierSettingsManager({
                   <DocumentUploadField
                     field="emiratesIdBackUrl"
                     kind="emirates-id-back"
-                    label="Emirates ID Back"
+                    label="Emirates ID Back *"
                     value={form.emiratesIdBackUrl}
                     pendingFileName={
                       pendingDocumentUploads.emiratesIdBackUrl?.fileName
@@ -1548,7 +1583,7 @@ export function SupplierSettingsManager({
 
           <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)]">
             <div className="space-y-2">
-              <Label htmlFor="bank-iban">Bank Account IBAN</Label>
+              <Label htmlFor="bank-iban">Bank Account IBAN<RequiredMark /></Label>
               <Input
                 id="bank-iban"
                 value={form.bankIban}
@@ -1561,7 +1596,7 @@ export function SupplierSettingsManager({
             <DocumentUploadField
               field="bankAccountProofUrl"
               kind="bank-account-proof"
-              label="Bank Account Proof"
+              label="Bank Account Proof *"
               value={form.bankAccountProofUrl}
               pendingFileName={
                 pendingDocumentUploads.bankAccountProofUrl?.fileName
@@ -1584,7 +1619,7 @@ export function SupplierSettingsManager({
               htmlFor="marketplace-agreement"
               className="leading-relaxed text-foreground"
             >
-              I accept the Marketplace Agreement
+              I accept the Marketplace Agreement<RequiredMark />
             </Label>
           </div>
           <div>
@@ -1611,7 +1646,7 @@ export function SupplierSettingsManager({
         </CardHeader>
         <CardContent className="grid gap-6 md:grid-cols-3">
           <div className="space-y-2">
-            <Label htmlFor="current-password">Current Password</Label>
+            <Label htmlFor="current-password">Current Password<RequiredMark /></Label>
             <div className="relative">
               <Input
                 id="current-password"
@@ -1652,7 +1687,7 @@ export function SupplierSettingsManager({
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="new-password">New Password</Label>
+            <Label htmlFor="new-password">New Password<RequiredMark /></Label>
             <div className="relative">
               <Input
                 id="new-password"
@@ -1693,7 +1728,7 @@ export function SupplierSettingsManager({
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="confirm-password">Confirm Password</Label>
+            <Label htmlFor="confirm-password">Confirm Password<RequiredMark /></Label>
             <div className="relative">
               <Input
                 id="confirm-password"
@@ -1754,7 +1789,7 @@ export function SupplierSettingsManager({
         </CardHeader>
         <CardContent className="grid gap-6 md:grid-cols-2">
           <div className="space-y-2 md:col-span-2">
-            <Label htmlFor="address-line-1">Address Line 1</Label>
+            <Label htmlFor="address-line-1">Address Line 1<RequiredMark /></Label>
             <Input
               id="address-line-1"
               value={form.addressLine1}
@@ -1782,7 +1817,7 @@ export function SupplierSettingsManager({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="city">City</Label>
+            <Label htmlFor="city">City<RequiredMark /></Label>
             <Input
               id="city"
               value={form.city}
@@ -1794,7 +1829,7 @@ export function SupplierSettingsManager({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="state">State</Label>
+            <Label htmlFor="state">State<RequiredMark /></Label>
             <Input
               id="state"
               value={form.state}
@@ -1806,7 +1841,7 @@ export function SupplierSettingsManager({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="postal-code">Postal Code</Label>
+            <Label htmlFor="postal-code">Postal Code<RequiredMark /></Label>
             <Input
               id="postal-code"
               value={form.postalCode}
@@ -1821,7 +1856,7 @@ export function SupplierSettingsManager({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="country">Country</Label>
+            <Label htmlFor="country">Country<RequiredMark /></Label>
             <Input
               id="country"
               value={form.country}

@@ -58,6 +58,18 @@ const deliveryOptions = [
   { value: "one_month", label: "One month" },
   { value: "more_than_one_month", label: "More than one month" },
 ] as const
+const maxQuoteNotesLength = 500
+const maxQuoteUnitPrice = 21474836.47
+const invalidNumberKeys = new Set(["e", "E", "+", "-"])
+
+const todayDate = () => new Date().toISOString().slice(0, 10)
+
+const normalizeMoneyInput = (value: string) => {
+  const cleaned = value.replace(/[^\d.]/g, "")
+  const [whole = "", ...fractionParts] = cleaned.split(".")
+  const fraction = fractionParts.join("")
+  return `${whole.slice(0, 8)}${fractionParts.length ? `.${fraction.slice(0, 2)}` : ""}`
+}
 
 const money = (value: number) =>
   `AED ${value.toLocaleString("en-AE", {
@@ -92,6 +104,19 @@ export function RfqTable({ rfqs, onBidSubmitted }: RfqTableProps) {
     event.preventDefault()
     if (!selected) return
     setError("")
+    const normalizedNotes = notes.trim()
+    if (normalizedNotes.length > maxQuoteNotesLength) {
+      setError(`Notes cannot exceed ${maxQuoteNotesLength} characters.`)
+      return
+    }
+    if (validUntil) {
+      const minDate = todayDate()
+      const maxDate = selected.responseDeadline.slice(0, 10)
+      if (validUntil < minDate || validUntil > maxDate) {
+        setError(`Quote validity must be between ${minDate} and ${maxDate}.`)
+        return
+      }
+    }
     const incompletePart = selected.parts.find((part) => {
       const item = itemQuotes[part.id]
       const completedFields = [item?.unitPrice, item?.partType, item?.deliveryOption].filter(Boolean).length
@@ -104,6 +129,14 @@ export function RfqTable({ rfqs, onBidSubmitted }: RfqTableProps) {
     const completedParts = selected.parts.filter((part) => itemQuotes[part.id]?.unitPrice && itemQuotes[part.id]?.partType && itemQuotes[part.id]?.deliveryOption)
     if (!completedParts.length) {
       setError("Complete at least one product row before saving the quote.")
+      return
+    }
+    const invalidPricePart = completedParts.find((part) => {
+      const unitPrice = Number(itemQuotes[part.id]?.unitPrice)
+      return !Number.isFinite(unitPrice) || unitPrice <= 0 || unitPrice > maxQuoteUnitPrice
+    })
+    if (invalidPricePart) {
+      setError(`${invalidPricePart.partName} unit price must be greater than zero and no more than AED ${maxQuoteUnitPrice.toLocaleString("en-AE")}.`)
       return
     }
     setSubmitting(true)
@@ -119,7 +152,7 @@ export function RfqTable({ rfqs, onBidSubmitted }: RfqTableProps) {
             deliveryOption: itemQuotes[part.id]?.deliveryOption,
           })),
           validUntil: validUntil || null,
-          notes,
+          notes: normalizedNotes,
         }),
       })
       const payload = await response.json() as { ok: boolean; bid?: RfqBid; message?: string }
@@ -253,7 +286,7 @@ export function RfqTable({ rfqs, onBidSubmitted }: RfqTableProps) {
                         <TableCell className="font-mono text-xs">{part.vehicleVin || selected.vehicleVin || "-"}</TableCell><TableCell><p className="font-medium">{part.partName}</p>{part.notes ? <p className="mt-1 text-xs text-muted-foreground">{part.notes}</p> : null}</TableCell>
                         <TableCell>{part.partNumber || "Not provided"}</TableCell>
                         <TableCell className="text-center">{part.quantity}</TableCell>
-                        <TableCell><Input id={`unit-price-${part.id}`} aria-label={`${part.partName} unit price`} type="number" inputMode="decimal" min="0.01" step="0.01" placeholder="Enter price" value={itemQuotes[part.id]?.unitPrice ?? ""} onChange={(event) => setItemQuotes((current) => ({ ...current, [part.id]: { unitPrice: event.target.value, partType: current[part.id]?.partType ?? "", deliveryOption: current[part.id]?.deliveryOption ?? "" } }))} className="border-primary/50 bg-background font-medium" /></TableCell>
+                        <TableCell><Input id={`unit-price-${part.id}`} aria-label={`${part.partName} unit price`} type="number" inputMode="decimal" min="0.01" max={maxQuoteUnitPrice} step="0.01" placeholder="Enter price" value={itemQuotes[part.id]?.unitPrice ?? ""} onKeyDown={(event) => { if (invalidNumberKeys.has(event.key)) event.preventDefault() }} onChange={(event) => setItemQuotes((current) => ({ ...current, [part.id]: { unitPrice: normalizeMoneyInput(event.target.value), partType: current[part.id]?.partType ?? "", deliveryOption: current[part.id]?.deliveryOption ?? "" } }))} className="border-primary/50 bg-background font-medium" /></TableCell>
                         <TableCell><select id={`part-type-${part.id}`} aria-label={`${part.partName} condition`} value={itemQuotes[part.id]?.partType ?? ""} onChange={(event) => setItemQuotes((current) => ({ ...current, [part.id]: { unitPrice: current[part.id]?.unitPrice ?? "", partType: event.target.value as "" | (typeof partTypeOptions)[number], deliveryOption: current[part.id]?.deliveryOption ?? "" } }))} className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"><option value="" disabled>Select condition</option>{partTypeOptions.map((option) => <option key={option} value={option}>{option}</option>)}</select></TableCell>
                         <TableCell><select id={`delivery-option-${part.id}`} aria-label={`${part.partName} delivery time`} value={itemQuotes[part.id]?.deliveryOption ?? ""} onChange={(event) => setItemQuotes((current) => ({ ...current, [part.id]: { unitPrice: current[part.id]?.unitPrice ?? "", partType: current[part.id]?.partType ?? "", deliveryOption: event.target.value as "" | (typeof deliveryOptions)[number]["value"] } }))} className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"><option value="" disabled>Select delivery</option>{deliveryOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></TableCell>
                         <TableCell className="text-right font-semibold">{money((Number(itemQuotes[part.id]?.unitPrice) || 0) * part.quantity)}</TableCell>
@@ -266,14 +299,14 @@ export function RfqTable({ rfqs, onBidSubmitted }: RfqTableProps) {
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2 sm:col-span-2">
                 <Label htmlFor="valid-until">Quote valid until (optional)</Label>
-                <Input id="valid-until" type="date" min={new Date().toISOString().slice(0, 10)} max={selected.responseDeadline.slice(0, 10)} value={validUntil} onChange={(event) => setValidUntil(event.target.value)} />
+                <Input id="valid-until" type="date" min={todayDate()} max={selected.responseDeadline.slice(0, 10)} value={validUntil} onChange={(event) => setValidUntil(event.target.value)} />
                 <p className="text-xs text-muted-foreground">
                   Leave blank if the quote remains valid until the RFQ deadline ({selected.deadline}).
                 </p>
               </div>
               <div className="space-y-2 sm:col-span-2">
                 <Label htmlFor="quote-notes">Notes</Label>
-                <textarea id="quote-notes" className="min-h-24 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm" value={notes} onChange={(event) => setNotes(event.target.value)} />
+                <textarea id="quote-notes" className="min-h-24 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm" value={notes} maxLength={maxQuoteNotesLength} onChange={(event) => setNotes(event.target.value.slice(0, maxQuoteNotesLength))} />
               </div>
             </div>
             {error ? <p className="text-sm text-destructive">{error}</p> : null}
