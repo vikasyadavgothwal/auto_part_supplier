@@ -24,6 +24,7 @@ import { ProductMasterForm } from "./product-master-form"
 import type {
   InventoryPagination,
   Product,
+  SupplierPartCreateResponse,
   SupplierPartsListResponse,
 } from "./types"
 
@@ -110,6 +111,28 @@ export function InventoryPageContent({
       message: `${product.productName} was removed from your inventory.`,
     })
     await loadProducts(pagination.page)
+  }
+
+  async function updateProductStockPrice(product: Product, input: { stock: number; price: number }) {
+    if (!product.id) {
+      throw new Error("Product id is missing")
+    }
+    const response = await authenticatedFetch(`/api/supplier/parts/${product.id}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ stock: input.stock, price: input.price }),
+    })
+    const payload = (await response.json().catch(() => null)) as SupplierPartCreateResponse | null
+    if (!response.ok || !payload?.ok || !payload.part) {
+      throw new Error(payload?.message ?? "Unable to update stock and price")
+    }
+    const mapped = mapSupplierPartToProduct(payload.part)
+    setProducts((current) => current.map((item) => (item.id === mapped.id ? mapped : item)))
+    showToast({
+      type: "success",
+      title: "Stock and price updated",
+      message: `${mapped.productName} was updated.`,
+    })
   }
 
   const parseExportFilename = (disposition: string | null) => {
@@ -288,6 +311,7 @@ export function InventoryPageContent({
             setIsProductFormOpen(true)
           }}
           onDeleteProduct={deleteProduct}
+          onUpdateStockPrice={updateProductStockPrice}
           onUpgradePlan={() => {
             window.location.href = "/plans"
           }}

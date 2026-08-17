@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { BillingPrice } from "@/components/plans/billing-price"
 import { ChangePlanButton } from "@/components/plans/change-plan-button"
+import { FeaturedCategoryPlanCard } from "@/components/plans/featured-category-plan-card"
 import { PaymentHistoryTable } from "@/components/plans/payment-history-table"
 import { requestBackend } from "@/lib/auth/backend"
 
@@ -23,6 +24,7 @@ type BusinessPlan = {
   limits: { staff: number | null; roles: number | null; products: number | null; brands: number | null; categories: number | null; rfqs: number | null; orders: number | null }
   reports?: { dashboard: boolean; usage: boolean; activity: boolean }
   support?: { priority: boolean }
+  marketplace?: { featuredVendor: boolean; featuredVendorCategoryLimit: number | null; allowedCategoryIds?: string[]; searchBoostLevel: number }
   enabledFeatures: string[]
 }
 
@@ -78,6 +80,11 @@ export async function PlansPage() {
 
   return <div className="space-y-6">
     {currentPlan ? <section className="rounded-lg border border-border bg-card p-5 shadow-sm"><div className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-sm text-muted-foreground">Current plan</p><h2 className="mt-2 text-2xl font-semibold">{currentPlan.name}</h2><p className="mt-1 text-sm text-muted-foreground">{currentPlan.description}</p></div>{currentPlan.code !== "Free" ? <div className="text-left sm:text-right"><BillingPrice code={currentPlan.code} currency={currentPlan.price.currency} monthlyAmount={currentPlan.price.amount} yearlyAmount={currentPlan.price.yearlyAmount} /><p className="mt-1 text-xs text-emerald-500">Active subscription</p></div> : null}</div>{reachedLimits.length ? <p className="mt-3 rounded border border-amber-500/30 bg-amber-500/10 p-2 text-sm text-amber-200">Usage has reached plan limits for: {reachedLimits.map((item) => item.label).join(", ")}. Ask admin for a higher plan.</p> : null}</section> : null}
+    {currentPlan?.marketplace?.featuredVendor ? (
+      <FeaturedCategoryPlanCard
+        categoryLimit={currentPlan.marketplace.featuredVendorCategoryLimit}
+      />
+    ) : null}
     {currentPlan?.code !== "Enterprise" ? <Card>
       <CardHeader>
         <CardTitle>Active add-ons</CardTitle>

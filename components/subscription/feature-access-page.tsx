@@ -1,12 +1,15 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { HelpCircle, MessageSquare, PlayCircle, Search } from "lucide-react"
 import { useToast } from "@/components/ui/toast-provider"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { PaymentHistoryTable } from "@/components/plans/payment-history-table"
+import { FeaturedVendorAddOnCard } from "@/components/subscription/featured-vendor-add-on-card"
 import { appPath, appRoutes } from "@/lib/routes"
 
 type FeatureArea = "add-ons" | "integrations" | "support"
@@ -22,8 +25,13 @@ export type BusinessAccess = {
 }
 
 type AddOnRequest = PriceFields & { id: string; featureKey: string; label: string; status: string; priceQuantity?: number; validFrom?: string | null; validUntil?: string | null; renewalAt?: string | null }
+type FeaturedCategory = { categoryId: string; categoryName: string; parentName?: string | null; selected?: boolean; priceAmount: number; priceCurrency: string; validityDays: number }
+type AddOnsPayload = { addOnRequests?: AddOnRequest[]; data?: { addOnRequests?: AddOnRequest[] } }
+type PaymentTransaction = { id: string; type: string; sourceKey?: string | null; description: string; amount: number; currency: string; status: string; createdAt: string; validUntil?: string | null; validityDays?: number | null }
+type TransactionsPayload = { transactions?: PaymentTransaction[]; data?: { transactions?: PaymentTransaction[] } }
 export type SupportContent = { supportTier: string; supportSummary: string; ticketCategories: Array<{ value: string; label: string }>; videos: Array<{ id: string; title: string; description?: string | null; videoUrl: string; supportTier: string }>; faqs: Array<{ id: string; question: string; answer: string; supportTier: string }> }
 type SupportVideo = SupportContent["videos"][number]
+type PendingAddOnConfirmation = { featureKey: string; note?: string; validityDays?: number }
 const limitFeatureKey = (metric: string, extraUnits: number) => `limit.${metric}.${extraUnits}`
 const formatMoney = (amount = 0, currency = "AED") => `${currency} ${(amount / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 const dateFormatter = new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "short", timeZone: "UTC", year: "numeric" })
@@ -45,12 +53,11 @@ const isAddOnCurrentlyActive = (request?: Pick<AddOnRequest, "status" | "validFr
 }
 const addOnStatusLabel = (request?: Pick<AddOnRequest, "status" | "validFrom" | "validUntil"> | null) =>
   isAddOnCurrentlyActive(request) ? "Already added" : request?.status === "Requested" ? "Request sent" : request?.status === "Rejected" ? "Rejected" : request?.status && activeAddOnStatuses.has(request.status) ? "Expired" : request?.status ?? "Available"
-const addOnStatusClass = (request: Pick<AddOnRequest, "status" | "validFrom" | "validUntil">) =>
-  isAddOnCurrentlyActive(request)
-    ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-600"
-    : request.status === "Rejected"
-      ? "border-red-500/30 bg-red-500/10 text-red-600"
-      : "border-amber-500/30 bg-amber-500/10 text-amber-600"
+const normalizeAddOnsPayload = (payload: AddOnsPayload) => ({
+  addOnRequests: payload.addOnRequests ?? payload.data?.addOnRequests ?? [],
+})
+const normalizeTransactionsPayload = (payload: TransactionsPayload) =>
+  (payload.transactions ?? payload.data?.transactions ?? []).filter((item) => item.type === "add_on")
 
 const commonAddOnFeatureKeys = new Set([
   "integrations.manage",
@@ -128,11 +135,15 @@ export function SupplierFeatureAccessPage({
   const [pendingKey, setPendingKey] = useState<string | null>(null)
   const [limitTargets, setLimitTargets] = useState<Record<string, string>>({})
   const [addOns, setAddOns] = useState<AddOnRequest[]>([])
+  const [addOnTransactions, setAddOnTransactions] = useState<PaymentTransaction[]>([])
+  const [featuredCategories, setFeaturedCategories] = useState<FeaturedCategory[]>([])
+  const [featuredCategoryIds, setFeaturedCategoryIds] = useState<string[]>([])
   const [isTicketDialogOpen, setIsTicketDialogOpen] = useState(false)
   const [support] = useState<SupportContent>(initialSupport)
   const [faqQuery, setFaqQuery] = useState("")
   const [showAllVideos, setShowAllVideos] = useState(false)
   const [selectedVideo, setSelectedVideo] = useState<SupportVideo | null>(null)
+  const [pendingAddOnConfirmation, setPendingAddOnConfirmation] = useState<PendingAddOnConfirmation | null>(null)
   const [subject, setSubject] = useState("")
   const [ticketMessage, setTicketMessage] = useState("")
   const [category, setCategory] = useState("")
@@ -141,7 +152,40 @@ export function SupplierFeatureAccessPage({
   const requestable = useMemo(() => new Set((access?.requestableFeatures ?? []).map((item) => item.key)), [access?.requestableFeatures])
   const accountId = access?.businessAccount.id
   const integrationAction = access?.actions?.["integrations.connect"]
-  const addOnGroups = useMemo(() => addOnSections(access?.businessAccount.type ?? "Business", access?.limitAddOns ?? [], access?.requestableFeatures ?? []), [access?.businessAccount.type, access?.limitAddOns, access?.requestableFeatures])
+  const requestableFeatures = useMemo(() => {
+    const features = [...(access?.requestableFeatures ?? [])]
+    const supplierAccount = access?.businessAccount.type === "Supplier"
+    const featuredVendorListed = features.some((feature) => feature.key === "marketplace.featured-vendor")
+    if (supplierAccount && !featuredVendorListed) {
+      features.push({
+        key: "marketplace.featured-vendor",
+        label: "Featured vendor placement",
+        pricingModel: "fixed",
+        priceAmount: 0,
+        priceCurrency: "AED",
+        validityDays: 30,
+      })
+    }
+    return features
+  }, [access?.businessAccount.type, access?.requestableFeatures])
+  const addOnGroups = useMemo(() => addOnSections(access?.businessAccount.type ?? "Business", access?.limitAddOns ?? [], requestableFeatures), [access?.businessAccount.type, access?.limitAddOns, requestableFeatures])
+  const commonAddOnGroup = addOnGroups.find((section) => section.title === "Common add-ons")
+  const supplierAddOnGroup = addOnGroups.find((section) => section.title !== "Common add-ons")
+  const featuredVendorFeature = requestableFeatures.find((feature) => feature.key === "marketplace.featured-vendor")
+  const fetchAddOns = useCallback(async () => {
+    if (!accountId) return { addOnRequests: [] }
+    const response = await fetch(appPath(`/api/business/add-ons?businessAccountId=${encodeURIComponent(accountId)}`), { cache: "no-store" })
+    return normalizeAddOnsPayload(await response.json())
+  }, [accountId])
+  const fetchFeaturedCategories = useCallback(async () => {
+    const response = await fetch(appPath("/api/supplier/featured-categories?scope=add-on"), { credentials: "include", cache: "no-store" })
+    return response.json() as Promise<{ categories?: FeaturedCategory[]; selectedCategoryIds?: string[] }>
+  }, [])
+  const fetchAddOnTransactions = useCallback(async () => {
+    if (!accountId) return []
+    const response = await fetch(appPath(`/api/business/transactions?businessAccountId=${encodeURIComponent(accountId)}`), { cache: "no-store" })
+    return normalizeTransactionsPayload(await response.json())
+  }, [accountId])
   const filteredFaqs = useMemo(() => {
     const query = faqQuery.trim().toLowerCase()
     if (!query) return support.faqs
@@ -157,26 +201,213 @@ export function SupplierFeatureAccessPage({
 
   useEffect(() => {
     if (!accountId || area !== "add-ons") return
-    void fetch(appPath(`/api/business/add-ons?businessAccountId=${encodeURIComponent(accountId)}`)).then((response) => response.json()).then((payload) => setAddOns(payload?.addOnRequests ?? [])).catch(() => setAddOns([]))
-  }, [accountId, area])
+    void fetchAddOns()
+      .then((payload) => {
+        setAddOns(payload.addOnRequests)
+      })
+      .catch(() => {
+        setAddOns([])
+      })
+  }, [accountId, area, fetchAddOns])
+  useEffect(() => {
+    if (area !== "add-ons") return
+    void fetchFeaturedCategories()
+      .then((payload) => {
+        setFeaturedCategories(payload.categories ?? [])
+        setFeaturedCategoryIds([])
+      })
+      .catch(() => {
+        setFeaturedCategories([])
+        setFeaturedCategoryIds([])
+      })
+  }, [area, fetchFeaturedCategories])
+  useEffect(() => {
+    if (!accountId || area !== "add-ons") return
+    void fetchAddOnTransactions()
+      .then(setAddOnTransactions)
+      .catch(() => setAddOnTransactions([]))
+  }, [accountId, area, fetchAddOnTransactions])
+
+  function renderEmptyAddOnCard(label: string) {
+    return <Card><CardContent className="pt-6 text-sm text-muted-foreground">{label}</CardContent></Card>
+  }
+
+  function renderAddOnSectionContent(section: ReturnType<typeof addOnSections>[number]) {
+    const visibleFeatures = section.features.filter((feature) => feature.key !== "marketplace.featured-vendor")
+    return (
+      <section className="space-y-3">
+        <div>
+          <h2 className="text-base font-semibold text-foreground">{section.title}</h2>
+          <p className="text-sm text-muted-foreground">{section.description}</p>
+        </div>
+        {section.limits.length ? (
+          <div className="grid gap-4 md:grid-cols-2">
+            {section.limits.map((item) => {
+              const rawExtraUnits = limitTargets[item.metric] ?? String(item.suggestedExtraUnits ?? 5)
+              const extraUnits = Number(rawExtraUnits)
+              const featureKey = Number.isInteger(extraUnits) ? limitFeatureKey(item.metric, extraUnits) : item.key
+              const request = addOns.find((row) => row.featureKey === featureKey)
+              const active = isAddOnCurrentlyActive(request)
+              const waiting = request?.status === "Requested"
+              const currentLimit = item.currentLimit ?? 0
+              const addedCapacity = limitExtraUnits(extraUnits)
+              const newTotalLimit = currentLimit + addedCapacity
+              const invalid = !Number.isInteger(extraUnits) || extraUnits < 1
+
+              return (
+                <Card key={item.metric}>
+                  <CardHeader>
+                    <CardTitle className="text-base">{item.label}</CardTitle>
+                    <CardDescription>Enter how many extra units you want to add to your current limit.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="grid gap-3 sm:grid-cols-[1fr_auto]">
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      min={1}
+                      step={1}
+                      className="h-10 rounded-md border border-border bg-background px-3 text-sm text-foreground outline-none focus:border-primary"
+                      value={rawExtraUnits}
+                      onChange={(event) => setLimitTargets((targets) => ({ ...targets, [item.metric]: event.target.value.replace(/\D/g, "").slice(0, 6) }))}
+                    />
+                    <Button disabled={pendingKey === featureKey || active || waiting || invalid} onClick={() => requestAddOn(featureKey, `Add ${addedCapacity} extra units. New total limit after add-on: ${newTotalLimit}.`)}>
+                      {pendingKey === featureKey ? "Adding..." : active ? "Already added" : waiting ? "Request sent" : request?.status === "Rejected" ? "Add again" : "Add extra limit"}
+                    </Button>
+                    <div className="text-xs text-muted-foreground sm:col-span-2">
+                      <p>{addOnStatusLabel(request)}{request ? ` · ${formatValidUntil(request.validUntil)}` : ""}</p>
+                      <p>Current total limit: {item.currentLimit ?? "Unlimited"} · Current usage: {item.currentUsage}</p>
+                      <p>New total limit after add-on: {Number.isInteger(extraUnits) ? newTotalLimit : "Enter a valid number"} · Added capacity: {limitExtraUnitText(addedCapacity)}</p>
+                      <p>Estimated price: {limitPriceText(item, addedCapacity)}</p>
+                      <p>Validity: {formatValidity(item.validityDays)}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </div>
+        ) : null}
+        {visibleFeatures.length ? (
+          <div className="grid gap-4 md:grid-cols-2">
+            {visibleFeatures.map((feature) => {
+              const request = addOns.find((item) => item.featureKey === feature.key)
+              const active = isAddOnCurrentlyActive(request)
+              const waiting = request?.status === "Requested"
+              return (
+                <Card key={feature.key}>
+                  <CardHeader>
+                    <CardTitle className="text-base">{feature.label}</CardTitle>
+                    <CardDescription>Available as an add-on without changing your current plan.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="grid gap-3">
+                    <div>
+                      <span className="text-sm text-muted-foreground">{addOnStatusLabel(request)}{request ? ` · ${formatValidUntil(request.validUntil)}` : ""}</span>
+                      <p className="text-xs text-muted-foreground">Price: {formatMoney(feature.priceAmount, feature.priceCurrency)}</p>
+                      <p className="text-xs text-muted-foreground">Validity: {formatValidity(feature.validityDays)}</p>
+                    </div>
+                    <Button className="justify-self-end" disabled={pendingKey === feature.key || active || waiting} onClick={() => requestAddOn(feature.key)}>
+                      {pendingKey === feature.key ? "Adding..." : active ? "Already added" : waiting ? "Request sent" : request?.status === "Rejected" ? "Add again" : "Add Add-on"}
+                    </Button>
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </div>
+        ) : null}
+        {!section.limits.length && !visibleFeatures.length ? renderEmptyAddOnCard("No add-ons are available in this section.") : null}
+      </section>
+    )
+  }
 
   if (area === "add-ons") return <main className="space-y-6">
     <Card><CardHeader><p className="text-sm text-muted-foreground">Current plan: {access?.businessAccount.plan.name ?? "Unavailable"}</p><CardTitle>Paid Add-ons</CardTitle><CardDescription>Add a feature that is not included in your plan. Confirm once and it will be enabled for your account.</CardDescription></CardHeader></Card>
-    {addOns.length ? <Card><CardHeader><CardTitle className="text-base">Your add-ons</CardTitle></CardHeader><CardContent className="flex flex-wrap gap-2">{addOns.map((item) => <span key={item.id} className={`rounded-full border px-3 py-1 text-sm ${addOnStatusClass(item)}`}>{item.label}: {addOnStatusLabel(item)} · {formatValidUntil(item.validUntil)}</span>)}</CardContent></Card> : null}
-    {addOnGroups.map((section) => <section key={section.title} className="space-y-3"><div><h2 className="text-base font-semibold text-foreground">{section.title}</h2><p className="text-sm text-muted-foreground">{section.description}</p></div>{section.limits.length ? <div className="grid gap-4 md:grid-cols-2">{section.limits.map((item) => { const rawExtraUnits = limitTargets[item.metric] ?? String(item.suggestedExtraUnits ?? 5); const extraUnits = Number(rawExtraUnits); const featureKey = Number.isInteger(extraUnits) ? limitFeatureKey(item.metric, extraUnits) : item.key; const request = addOns.find((row) => row.featureKey === featureKey); const active = isAddOnCurrentlyActive(request); const waiting = request?.status === "Requested"; const currentLimit = item.currentLimit ?? 0; const addedCapacity = limitExtraUnits(extraUnits); const newTotalLimit = currentLimit + addedCapacity; const invalid = !Number.isInteger(extraUnits) || extraUnits < 1; return <Card key={item.metric}><CardHeader><CardTitle className="text-base">{item.label}</CardTitle><CardDescription>Enter how many extra units you want to add to your current limit.</CardDescription></CardHeader><CardContent className="grid gap-3 sm:grid-cols-[1fr_auto]"><input type="number" inputMode="numeric" min={1} step={1} className="h-10 rounded-md border border-border bg-background px-3 text-sm text-foreground outline-none focus:border-primary" value={rawExtraUnits} onChange={(event) => setLimitTargets((targets) => ({ ...targets, [item.metric]: event.target.value.replace(/\D/g, "").slice(0, 6) }))} /><Button disabled={pendingKey === featureKey || active || waiting || invalid} onClick={() => requestAddOn(featureKey, `Add ${addedCapacity} extra units. New total limit after add-on: ${newTotalLimit}.`)}>{pendingKey === featureKey ? "Adding..." : active ? "Already added" : waiting ? "Request sent" : request?.status === "Rejected" ? "Add again" : "Add extra limit"}</Button><div className="text-xs text-muted-foreground sm:col-span-2"><p>{addOnStatusLabel(request)}{request ? ` · ${formatValidUntil(request.validUntil)}` : ""}</p><p>Current total limit: {item.currentLimit ?? "Unlimited"} · Current usage: {item.currentUsage}</p><p>New total limit after add-on: {Number.isInteger(extraUnits) ? newTotalLimit : "Enter a valid number"} · Added capacity: {limitExtraUnitText(addedCapacity)}</p><p>Estimated price: {limitPriceText(item, addedCapacity)}</p><p>Validity: {formatValidity(item.validityDays)}</p></div></CardContent></Card> })}</div> : null}{section.features.length ? <div className="grid gap-4 md:grid-cols-2">{section.features.map((feature) => { const request = addOns.find((item) => item.featureKey === feature.key); const active = isAddOnCurrentlyActive(request); const waiting = request?.status === "Requested"; return <Card key={feature.key}><CardHeader><CardTitle className="text-base">{feature.label}</CardTitle><CardDescription>Available as an add-on without changing your current plan.</CardDescription></CardHeader><CardContent className="flex items-center justify-between gap-3"><div><span className="text-sm text-muted-foreground">{addOnStatusLabel(request)}{request ? ` · ${formatValidUntil(request.validUntil)}` : ""}</span><p className="text-xs text-muted-foreground">Price: {formatMoney(feature.priceAmount, feature.priceCurrency)}</p><p className="text-xs text-muted-foreground">Validity: {formatValidity(feature.validityDays)}</p></div><Button disabled={pendingKey === feature.key || active || waiting} onClick={() => requestAddOn(feature.key)}>{pendingKey === feature.key ? "Adding..." : active ? "Already added" : waiting ? "Request sent" : request?.status === "Rejected" ? "Add again" : "Add Add-on"}</Button></CardContent></Card> })}</div> : null}</section>)}
+    <Tabs defaultValue="common" className="space-y-4">
+      <TabsList className="h-auto w-full justify-start overflow-x-auto rounded-md border border-border bg-card p-1">
+        <TabsTrigger value="common" className="px-4 py-2">Common add-ons</TabsTrigger>
+        <TabsTrigger value="supplier" className="px-4 py-2">Supplier add-ons</TabsTrigger>
+        <TabsTrigger value="featured" className="px-4 py-2">Featured Vendor</TabsTrigger>
+      </TabsList>
+      <TabsContent value="common" className="space-y-3">
+        {commonAddOnGroup ? renderAddOnSectionContent({ ...commonAddOnGroup, features: commonAddOnGroup.features.filter((feature) => feature.key !== "marketplace.featured-vendor") }) : renderEmptyAddOnCard("No common add-ons are available.")}
+      </TabsContent>
+      <TabsContent value="supplier" className="space-y-3">
+        {supplierAddOnGroup ? renderAddOnSectionContent({ ...supplierAddOnGroup, features: supplierAddOnGroup.features.filter((feature) => feature.key !== "marketplace.featured-vendor") }) : renderEmptyAddOnCard("No supplier add-ons are available.")}
+      </TabsContent>
+      <TabsContent value="featured">
+        {featuredVendorFeature ? (
+          <div className="grid gap-4">
+            <FeaturedVendorAddOnCard
+              addOns={addOns}
+              categories={featuredCategories}
+              feature={featuredVendorFeature}
+              pendingKey={pendingKey}
+              selectedCategoryIds={featuredCategoryIds}
+              setSelectedCategoryIds={setFeaturedCategoryIds}
+              onRequest={(featureKey, validityDays) => requestAddOn(featureKey, undefined, validityDays)}
+            />
+          </div>
+        ) : renderEmptyAddOnCard("Featured Vendor add-on is not available.")}
+      </TabsContent>
+    </Tabs>
+    <PaymentHistoryTable
+      accountLabel="Supplier"
+      transactions={addOnTransactions}
+      title="Add-on payment history"
+      description="All paid Common, Supplier, and Featured Vendor add-ons for this supplier account."
+      showDuration
+      showExpiry
+      hideTypeAndReference
+    />
     {!addOnGroups.length ? <Card><CardContent className="pt-6 text-sm text-muted-foreground">No additional paid features are available for this account.</CardContent></Card> : null}
+    <Dialog open={Boolean(pendingAddOnConfirmation)} onOpenChange={(open) => { if (!open) setPendingAddOnConfirmation(null) }}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Add paid add-on</DialogTitle>
+          <DialogDescription>This add-on will be enabled for your supplier account.</DialogDescription>
+        </DialogHeader>
+        {pendingAddOnConfirmation?.note ? <p className="rounded-md border border-border bg-background p-3 text-sm text-muted-foreground">{pendingAddOnConfirmation.note}</p> : null}
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button type="button" variant="outline">Cancel</Button>
+          </DialogClose>
+          <Button type="button" disabled={pendingKey === pendingAddOnConfirmation?.featureKey} onClick={() => pendingAddOnConfirmation ? confirmAddOnRequest(pendingAddOnConfirmation) : undefined}>
+            {pendingKey === pendingAddOnConfirmation?.featureKey ? "Adding..." : "Confirm add-on"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   </main>
 
-  async function requestAddOn(featureKey: string, note?: string) {
+  function requestAddOn(featureKey: string, note?: string, validityDays?: number) {
     if (!accountId) return
-    const confirmMessage = note ? `Are you sure you want to add this add-on? It will be enabled for your account now.\n\n${note}` : "Are you sure you want to add this add-on? It will be enabled for your account now."
-    if (!window.confirm(confirmMessage)) return
+    setPendingAddOnConfirmation({ featureKey, note, validityDays })
+  }
+
+  async function confirmAddOnRequest({ featureKey, note, validityDays }: PendingAddOnConfirmation) {
+    if (!accountId) return
     setPendingKey(featureKey)
     try {
-      const response = await fetch(appPath("/api/business/add-ons/request"), { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ businessAccountId: accountId, featureKey, note }) })
+      const response = await fetch(appPath("/api/business/add-ons/request"), {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          businessAccountId: accountId,
+          featureKey,
+          note,
+          categoryIds: featureKey === "marketplace.featured-vendor" ? featuredCategoryIds : undefined,
+          validityDays: featureKey === "marketplace.featured-vendor" ? validityDays : undefined,
+        }),
+      })
       const payload = await response.json().catch(() => ({}))
       if (!response.ok || payload?.ok === false) throw new Error(payload?.message ?? "Unable to request add-on")
-      setAddOns((items) => [payload.addOnRequest, ...items.filter((item) => item.featureKey !== featureKey)])
+      const addOnPayload = await fetchAddOns()
+      setAddOns(addOnPayload.addOnRequests)
+      setAddOnTransactions(await fetchAddOnTransactions())
+      if (featureKey === "marketplace.featured-vendor") {
+        const featuredCategoryPayload = await fetchFeaturedCategories()
+        setFeaturedCategories(featuredCategoryPayload.categories ?? [])
+        setFeaturedCategoryIds([])
+      }
+      setPendingAddOnConfirmation(null)
       showToast({ type: "success", title: "Add-on enabled", message: "This add-on is enabled for your account." })
     } catch (error) { showToast({ type: "error", title: "Unable to request add-on", message: error instanceof Error ? error.message : "Unable to request add-on" }) } finally { setPendingKey(null) }
   }

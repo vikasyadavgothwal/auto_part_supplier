@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, type FormEvent, type KeyboardEvent } from "react"
+import { useEffect, useMemo, useState, type FormEvent, type KeyboardEvent } from "react"
 import { CircleCheck, TriangleAlert } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -24,14 +24,16 @@ import type {
 
 type Field = { key: string; label?: string; type?: string; required?: boolean; wide?: boolean }
 type Group = { title: string; description: string; fields: Field[] }
+type ProductMasterLookups = {
+  categories: Array<{ id: string; name: string; parentId: string | null; parentName: string | null }>
+  brands: Array<{ id: string; name: string; tier: string | null; categories: Array<{ id: string; name: string }> }>
+}
 
 const groups: Group[] = [
   { title: "Product & catalog", description: "The same identity, category and brand fields used by Product Master.", fields: [
     { key: "SKU", required: true }, { key: "Product Name", required: true },
     { key: "Short Description", wide: true }, { key: "Long Description", type: "textarea", wide: true },
-    { key: "Manufacturer Part Number (MPN)" }, { key: "Status" }, { key: "Grade" }, { key: "Condition" },
-    { key: "Category ID" }, { key: "Category Name", required: true }, { key: "Parent Category" },
-    { key: "Brand ID" }, { key: "Brand Name", required: true }, { key: "Product Categories", wide: true }, { key: "Tier 1" },
+    { key: "Manufacturer Part Number (MPN)", required: true }, { key: "Status" }, { key: "Grade" }, { key: "Condition" },
   ]},
   { title: "Attributes & vehicle fitment", description: "Describe the product and the exact vehicle application.", fields: [
     { key: "Attribute Name" }, { key: "Attribute Value" }, { key: "Detailed Attributes", type: "textarea", wide: true },
@@ -85,7 +87,7 @@ const readJsonResponse = async <T,>(response: Response, fallbackMessage: string)
 
 const requiredFields = groups.flatMap((group) =>
   group.fields.filter((field) => field.required).map((field) => field.key),
-)
+).concat(["Category Name", "Brand Name"])
 
 const numberFields = new Set(
   groups.flatMap((group) =>
@@ -184,6 +186,16 @@ const validateImageFiles = (files: File[]) => {
 const preventInvalidNumberKey = (event: KeyboardEvent<HTMLInputElement>) => {
   if (["e", "E", "+", "-"].includes(event.key)) event.preventDefault()
 }
+const fieldPlaceholder = (key: string) => {
+  if (key === "SKU") return "Enter vendor SKU"
+  if (key === "Product Name") return "Enter product name"
+  if (key === "Manufacturer Part Number (MPN)") return "Enter manufacturer part number"
+  if (key.includes("URL")) return "https://example.com/file"
+  if (key.includes("Quantity") || key.includes("Stock") || key.includes("Year") || key.includes("Months")) return "0"
+  if (key.includes("Price") || key.includes("VAT") || key.includes("Weight") || key.includes("Length") || key.includes("Width") || key.includes("Height")) return "0.00"
+  return `Enter ${key.toLowerCase()}`
+}
+const selectClassName = "h-10 w-full rounded-sm border border-input bg-transparent px-3 text-sm outline-none focus:border-ring focus:ring-3 focus:ring-ring/50"
 
 export function ProductMasterForm({ open, onOpenChange, product, onSaved }: {
   open: boolean
@@ -193,6 +205,11 @@ export function ProductMasterForm({ open, onOpenChange, product, onSaved }: {
 }) {
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState("")
+  const [lookups, setLookups] = useState<ProductMasterLookups>({ categories: [], brands: [] })
+  const [lookupError, setLookupError] = useState("")
+  const [selectedCategoryId, setSelectedCategoryId] = useState("")
+  const [selectedParentCategoryId, setSelectedParentCategoryId] = useState("")
+  const [selectedBrandId, setSelectedBrandId] = useState("")
   const raw = rawObject(product)
   const value = (key: string, fallback = "") => Object.prototype.hasOwnProperty.call(raw, key) ? String(raw[key] ?? "") : fallback
   const fallback: Record<string, string> = {
@@ -201,6 +218,50 @@ export function ProductMasterForm({ open, onOpenChange, product, onSaved }: {
     "Brand Name": product?.brand === "Unbranded" ? "" : product?.brand ?? "",
     "Product Pricing | Base Price (AED)": product ? String(product.priceValue) : "",
     "Product Pricing | Currency": "AED", "Product Inventory | Quantity": product ? String(product.stock) : "",
+  }
+  const selectedCategory = lookups.categories.find((category) => category.id === selectedCategoryId) ?? null
+  const selectedParentCategory = lookups.categories.find((category) => category.id === selectedParentCategoryId) ?? null
+  const selectedBrand = lookups.brands.find((brand) => brand.id === selectedBrandId) ?? null
+  const brandCategoryNames = useMemo(() => selectedBrand?.categories.map((category) => category.name) ?? [], [selectedBrand])
+
+  useEffect(() => {
+    if (!open) return
+    let ignore = false
+    const loadLookups = async () => {
+      try {
+        const response = await authenticatedFetch("/api/supplier/parts/product-master-lookups")
+        const payload = await readJsonResponse<{ ok?: boolean; message?: string } & ProductMasterLookups>(response, "Unable to load product lookups")
+        if (ignore) return
+        if (!response.ok || !payload.ok) throw new Error(payload.message ?? "Unable to load product lookups")
+        const nextLookups = { categories: payload.categories ?? [], brands: payload.brands ?? [] }
+        setLookups(nextLookups)
+        const currentRaw = rawObject(product)
+        const currentValue = (key: string, fallbackValue = "") =>
+          Object.prototype.hasOwnProperty.call(currentRaw, key) ? String(currentRaw[key] ?? "") : fallbackValue
+        const currentCategoryName = currentValue("Category Name", product?.category ?? "").toLowerCase()
+        const currentParentValue = currentValue("Parent Category").toLowerCase()
+        const currentBrandName = currentValue("Brand Name", product?.brand === "Unbranded" ? "" : product?.brand ?? "").toLowerCase()
+        const category = nextLookups.categories.find((item) => item.name.toLowerCase() === currentCategoryName)
+        const parent = nextLookups.categories.find((item) => item.id.toLowerCase() === currentParentValue || item.name.toLowerCase() === currentParentValue)
+        const brand = nextLookups.brands.find((item) => item.name.toLowerCase() === currentBrandName)
+        setSelectedCategoryId(category?.id ?? "")
+        setSelectedParentCategoryId(parent?.id ?? category?.parentId ?? "")
+        setSelectedBrandId(brand?.id ?? "")
+        setLookupError("")
+      } catch (cause) {
+        if (!ignore) setLookupError(cause instanceof Error ? cause.message : "Unable to load product lookups")
+      }
+    }
+    void loadLookups()
+    return () => {
+      ignore = true
+    }
+  }, [open, product])
+
+  const handleCategoryChange = (categoryId: string) => {
+    setSelectedCategoryId(categoryId)
+    const category = lookups.categories.find((item) => item.id === categoryId)
+    setSelectedParentCategoryId(category?.parentId ?? "")
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -265,21 +326,56 @@ export function ProductMasterForm({ open, onOpenChange, product, onSaved }: {
       <form className="flex min-h-0 flex-col" onSubmit={submit} noValidate>
         <div className="max-h-[72vh] space-y-6 overflow-y-auto px-5 py-5 sm:px-7">
           {error ? <div className="flex gap-2 rounded-sm border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive"><TriangleAlert className="size-4 shrink-0" />{error}</div> : null}
+          {lookupError ? <div className="flex gap-2 rounded-sm border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive"><TriangleAlert className="size-4 shrink-0" />{lookupError}</div> : null}
           <div className="rounded-sm border border-primary/20 bg-primary/5 p-4 text-sm text-brand-muted">
             <p className="flex items-center gap-2 font-semibold text-foreground"><CircleCheck className="size-4 text-primary" />Automatic product mapping</p>
           </div>
+          <section className="rounded-sm border border-border bg-brand-surface p-4 sm:p-5">
+            <h3 className="font-semibold text-foreground">Catalog selection</h3>
+            <p className="mt-1 text-xs text-brand-muted">Select existing category, parent category, and brand by name.</p>
+            <input type="hidden" name="Category ID" value={selectedCategory?.id ?? ""} />
+            <input type="hidden" name="Category Name" value={selectedCategory?.name ?? ""} />
+            <input type="hidden" name="Parent Category" value={selectedParentCategory?.id ?? ""} />
+            <input type="hidden" name="Brand ID" value={selectedBrand?.id ?? ""} />
+            <input type="hidden" name="Brand Name" value={selectedBrand?.name ?? ""} />
+            <input type="hidden" name="Product Categories" value={brandCategoryNames.join(", ")} />
+            <input type="hidden" name="Tier 1" value={selectedBrand?.tier ?? ""} />
+            <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="space-y-2">
+                <Label htmlFor="pm-category-select">Category Name <span className="text-destructive">*</span></Label>
+                <select id="pm-category-select" className={selectClassName} value={selectedCategoryId} onChange={(event) => handleCategoryChange(event.target.value)} required>
+                  <option value="">Select category</option>
+                  {lookups.categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="pm-parent-category-select">Parent Category</Label>
+                <select id="pm-parent-category-select" className={selectClassName} value={selectedParentCategoryId} onChange={(event) => setSelectedParentCategoryId(event.target.value)}>
+                  <option value="">No parent category</option>
+                  {lookups.categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="pm-brand-select">Brand Name <span className="text-destructive">*</span></Label>
+                <select id="pm-brand-select" className={selectClassName} value={selectedBrandId} onChange={(event) => setSelectedBrandId(event.target.value)} required>
+                  <option value="">Select brand</option>
+                  {lookups.brands.map((brand) => <option key={brand.id} value={brand.id}>{brand.name}</option>)}
+                </select>
+              </div>
+            </div>
+          </section>
           {groups.map((group) => <section key={group.title} className="rounded-sm border border-border bg-brand-surface p-4 sm:p-5">
             <h3 className="font-semibold text-foreground">{group.title}</h3><p className="mt-1 text-xs text-brand-muted">{group.description}</p>
             <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {group.fields.map((field) => <div key={field.key} className={`min-w-0 space-y-2 ${field.wide ? "sm:col-span-2 lg:col-span-3" : ""}`}>
-                <Label htmlFor={`pm-${field.key}`}>{field.label ?? field.key}{field.required ? " *" : ""}</Label>
-                {field.type === "textarea" ? <textarea id={`pm-${field.key}`} name={field.key} defaultValue={value(field.key, fallback[field.key])} maxLength={2000} className="min-h-24 w-full rounded-sm border border-input bg-transparent px-3 py-2 text-sm outline-none focus:border-ring focus:ring-3 focus:ring-ring/50" /> : <Input id={`pm-${field.key}`} name={field.key} type={field.type ?? "text"} min={field.type === "number" ? "0" : undefined} step={field.type === "number" ? integerFields.has(field.key) ? "1" : "any" : undefined} inputMode={field.type === "number" ? integerFields.has(field.key) ? "numeric" : "decimal" : undefined} onKeyDown={field.type === "number" ? preventInvalidNumberKey : undefined} maxLength={field.type === "number" ? undefined : 255} defaultValue={value(field.key, fallback[field.key])} />}
+                <Label htmlFor={`pm-${field.key}`}>{field.label ?? field.key}{field.required ? <span className="text-destructive"> *</span> : ""}</Label>
+                {field.type === "textarea" ? <textarea id={`pm-${field.key}`} name={field.key} placeholder={fieldPlaceholder(field.key)} defaultValue={value(field.key, fallback[field.key])} maxLength={2000} className="min-h-24 w-full rounded-sm border border-input bg-transparent px-3 py-2 text-sm outline-none focus:border-ring focus:ring-3 focus:ring-ring/50" /> : <Input id={`pm-${field.key}`} name={field.key} placeholder={fieldPlaceholder(field.key)} type={field.type ?? "text"} min={field.type === "number" ? "0" : undefined} step={field.type === "number" ? integerFields.has(field.key) ? "1" : "any" : undefined} inputMode={field.type === "number" ? integerFields.has(field.key) ? "numeric" : "decimal" : undefined} onKeyDown={field.type === "number" ? preventInvalidNumberKey : undefined} maxLength={field.type === "number" ? undefined : 255} defaultValue={value(field.key, fallback[field.key])} />}
               </div>)}
             </div>
           </section>)}
           <section className="rounded-sm border border-border bg-brand-surface p-4 sm:p-5"><h3 className="font-semibold">Marketplace settings & image upload</h3>
             <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {["Marketplace Settings | Allow Backorders (Yes/No)","Marketplace Settings | Max Order Quantity","Marketplace Settings | Is Active (Yes/No)"].map((key) => <div key={key} className="space-y-2"><Label htmlFor={`pm-${key}`}>{key}</Label><Input id={`pm-${key}`} name={key} type={key.includes("Max Order") ? "number" : "text"} min={key.includes("Max Order") ? "0" : undefined} step={key.includes("Max Order") ? "1" : undefined} inputMode={key.includes("Max Order") ? "numeric" : undefined} onKeyDown={key.includes("Max Order") ? preventInvalidNumberKey : undefined} maxLength={key.includes("Max Order") ? undefined : 3} defaultValue={value(key, key.includes("Is Active") ? "Yes" : key.includes("Backorders") ? "No" : "")} /></div>)}
+              {["Marketplace Settings | Allow Backorders (Yes/No)","Marketplace Settings | Max Order Quantity","Marketplace Settings | Is Active (Yes/No)"].map((key) => <div key={key} className="space-y-2"><Label htmlFor={`pm-${key}`}>{key}</Label>{key.includes("Yes/No") ? <select id={`pm-${key}`} name={key} className={selectClassName} defaultValue={value(key, key.includes("Is Active") ? "Yes" : "No")}><option value="">Select option</option><option value="Yes">Yes</option><option value="No">No</option></select> : <Input id={`pm-${key}`} name={key} placeholder={fieldPlaceholder(key)} type="number" min="0" step="1" inputMode="numeric" onKeyDown={preventInvalidNumberKey} defaultValue={value(key)} />}</div>)}
               <div className="space-y-2 sm:col-span-2 lg:col-span-3"><Label htmlFor="pm-images">Upload product images</Label><Input id="pm-images" name="imageFiles" type="file" accept="image/jpeg,image/png,image/webp" multiple /><p className="text-xs text-brand-muted">Optional. JPG, PNG or WebP; maximum 8 files and 5 MB each.</p></div>
             </div>
           </section>

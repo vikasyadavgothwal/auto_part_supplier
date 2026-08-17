@@ -16,11 +16,18 @@ type PaymentTransaction = {
   currency: string
   status: string
   createdAt: string
+  validUntil?: string | null
+  validityDays?: number | null
 }
 
 type PaymentHistoryTableProps = {
   accountLabel: string
   transactions: PaymentTransaction[]
+  title?: string
+  description?: string
+  showExpiry?: boolean
+  showDuration?: boolean
+  hideTypeAndReference?: boolean
 }
 
 const pageSize = 5
@@ -43,8 +50,9 @@ const moneyText = (amount: number, currency = "AED") =>
   })}`
 
 const typeText = (type: string) => type === "add_on" ? "Add-on" : "Plan"
+const durationText = (days?: number | null) => days ? `${days} day${days === 1 ? "" : "s"}` : "Not set"
 
-export function PaymentHistoryTable({ accountLabel, transactions }: PaymentHistoryTableProps) {
+export function PaymentHistoryTable({ accountLabel, transactions, title = "Payment history", description, showExpiry = false, showDuration = false, hideTypeAndReference = false }: PaymentHistoryTableProps) {
   const [page, setPage] = useState(1)
   const pageCount = Math.max(1, Math.ceil(transactions.length / pageSize))
   const safePage = Math.min(page, pageCount)
@@ -57,9 +65,9 @@ export function PaymentHistoryTable({ accountLabel, transactions }: PaymentHisto
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Payment history</CardTitle>
+        <CardTitle>{title}</CardTitle>
         <CardDescription>
-          Paid plan upgrades and add-ons for this {accountLabel} account. Downgrades are not recorded as payments.
+          {description ?? `Paid plan upgrades and add-ons for this ${accountLabel} account. Downgrades are not recorded as payments.`}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -70,8 +78,10 @@ export function PaymentHistoryTable({ accountLabel, transactions }: PaymentHisto
                 <TableRow>
                   <TableHead>Date</TableHead>
                   <TableHead>Description</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Reference</TableHead>
+                  {showDuration ? <TableHead>Duration</TableHead> : null}
+                  {showExpiry ? <TableHead>Expiry</TableHead> : null}
+                  {!hideTypeAndReference ? <TableHead>Type</TableHead> : null}
+                  {!hideTypeAndReference ? <TableHead>Reference</TableHead> : null}
                   <TableHead className="text-right">Amount</TableHead>
                   <TableHead>Status</TableHead>
                 </TableRow>
@@ -81,8 +91,10 @@ export function PaymentHistoryTable({ accountLabel, transactions }: PaymentHisto
                   <TableRow key={item.id}>
                     <TableCell>{formatDate(item.createdAt)}</TableCell>
                     <TableCell className="font-medium whitespace-normal">{item.description}</TableCell>
-                    <TableCell>{typeText(item.type)}</TableCell>
-                    <TableCell className="text-muted-foreground">{item.sourceKey ?? "—"}</TableCell>
+                    {showDuration ? <TableCell>{durationText(item.validityDays)}</TableCell> : null}
+                    {showExpiry ? <TableCell>{item.validUntil ? formatDate(item.validUntil) : "Not set"}</TableCell> : null}
+                    {!hideTypeAndReference ? <TableCell>{typeText(item.type)}</TableCell> : null}
+                    {!hideTypeAndReference ? <TableCell className="text-muted-foreground">{item.sourceKey ?? "—"}</TableCell> : null}
                     <TableCell className="text-right font-semibold">{moneyText(item.amount, item.currency)}</TableCell>
                     <TableCell>
                       <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 text-emerald-500">

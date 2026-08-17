@@ -71,13 +71,11 @@ export function AppSidebar({
   profile,
   visibleMenus = [],
   planName,
-  planCode,
   isOwner = false,
 }: {
   profile: SupplierProfileRecord
   visibleMenus?: string[]
   planName?: string | null
-  planCode?: string | null
   isOwner?: boolean
 }) {
   const currentPath = stripBasePath(usePathname())
@@ -108,8 +106,6 @@ export function AppSidebar({
     ...(isOwner ? ["overview", "plans", "add-ons"] : []),
     ...effectiveVisibleMenus,
   ])
-  if (planCode === "Enterprise" || /\benterprise\b/i.test(planName ?? "")) visibleMenuSet.delete("add-ons")
-
   const handleRestrictedNavigation = (
     event: MouseEvent<HTMLAnchorElement>,
   ) => {
