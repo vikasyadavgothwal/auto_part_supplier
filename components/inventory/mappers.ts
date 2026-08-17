@@ -57,6 +57,7 @@ export function mapSupplierPartToProduct(part: SupplierPartApiRecord): Product {
     description: part.part?.description ?? null,
     keyFeatures: part.part?.keyFeatures ?? [],
     rawUploadData: part.rawUploadData,
+    isFeaturedVendorProduct: Boolean(part.isFeaturedVendorProduct),
   }
 }
 

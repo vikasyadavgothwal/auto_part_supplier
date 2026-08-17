@@ -41,6 +41,7 @@ export type Product = {
   description: string | null
   keyFeatures: string[]
   rawUploadData?: unknown
+  isFeaturedVendorProduct?: boolean
 }
 
 export type SupplierPartMappingStatusApi =
@@ -71,6 +72,7 @@ export type SupplierPartApiRecord = {
   isActive: boolean
   planSuspensionReason: string | null
   rawUploadData?: unknown
+  isFeaturedVendorProduct?: boolean
   createdAt: string
   updatedAt: string
   part?: {
