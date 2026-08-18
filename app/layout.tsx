@@ -17,15 +17,6 @@ export const metadata: Metadata = {
   description: "Supplier dashboard",
 };
 
-const firebaseRuntimeConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY ?? "",
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN ?? "",
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? "",
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET ?? "",
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID ?? "",
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID ?? "",
-}
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -39,9 +30,8 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         <script
           id="firebase-runtime-config"
-          dangerouslySetInnerHTML={{
-            __html: `window.__AUTO_PARTS_FIREBASE_CONFIG__=${JSON.stringify(firebaseRuntimeConfig).replace(/</g, "\\u003c")};`,
-          }}
+          src="/api/firebase-config.js"
+          async={false}
         />
         {children}
       </body>
