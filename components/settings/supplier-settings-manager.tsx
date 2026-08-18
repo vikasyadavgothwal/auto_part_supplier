@@ -786,7 +786,13 @@ export function SupplierSettingsManager({
         throw new Error(payload.message || "Unable to upload supplier image")
       }
       setCurrentProfile(payload.profile)
-      showFeedback("success", "Image Updated", "Supplier image updated")
+      syncProfileForm(payload.profile)
+      showFeedback(
+        "success",
+        "Image Updated",
+        "Supplier image saved to your profile",
+      )
+      router.refresh()
     } catch (uploadError) {
       showFeedback(
         "error",
