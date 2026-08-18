@@ -974,7 +974,10 @@ export function SupplierSettingsManager({
         {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ phone: normalizedPhone }),
+          body: JSON.stringify({
+            phone: normalizedPhone,
+            target: "supplierContactPhone",
+          }),
         },
       )
       const checkPayload = (await checkResponse.json().catch(() => null)) as {
@@ -1007,6 +1010,11 @@ export function SupplierSettingsManager({
   }
 
   const verifySupplierContactOtp = async () => {
+    if (!/^\d{6}$/.test(supplierContactOtp)) {
+      showFeedback("error", "Validation Error", "Enter the 6-digit OTP")
+      return
+    }
+
     setIsVerifyingSupplierContactOtp(true)
 
     try {
@@ -1295,7 +1303,7 @@ export function SupplierSettingsManager({
                     onClick={verifySupplierContactOtp}
                     disabled={
                       isVerifyingSupplierContactOtp ||
-                      !supplierContactOtp.trim()
+                      !/^\d{6}$/.test(supplierContactOtp)
                     }
                     className="gap-2"
                   >
@@ -1304,14 +1312,14 @@ export function SupplierSettingsManager({
                 </div>
               ) : null}
               <p className="text-xs text-muted-foreground">
-                This customer-facing number must be verified with Firebase OTP before saving.
+                Send OTP, enter the 6-digit code, then verify this customer-facing number before saving.
               </p>
             </div>
 
             <div className="md:col-span-2">
               <Button
                 type="button"
-                disabled={savingSection === "profile"}
+                disabled={savingSection === "profile" || supplierContactPhoneChanged}
                 onClick={() =>
                   void saveSection("profile", "Public supplier profile saved")
                 }
