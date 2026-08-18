@@ -27,6 +27,7 @@ type Group = { title: string; description: string; fields: Field[] }
 type ProductMasterLookups = {
   categories: Array<{ id: string; name: string; parentId: string | null; parentName: string | null }>
   brands: Array<{ id: string; name: string; tier: string | null; categories: Array<{ id: string; name: string }> }>
+  vehicles: Array<{ id: string; make: string; model: string; tier: string | null }>
 }
 
 const groups: Group[] = [
@@ -37,8 +38,7 @@ const groups: Group[] = [
   ]},
   { title: "Attributes & vehicle fitment", description: "Describe the product and the exact vehicle application.", fields: [
     { key: "Attribute Name" }, { key: "Attribute Value" }, { key: "Detailed Attributes", type: "textarea", wide: true },
-    { key: "Attribute Name (B)" }, { key: "Attribute Name (C)" }, { key: "Vehicle ID" },
-    { key: "Vehicle Fitment | Make" }, { key: "Vehicle Fitment | Model" },
+    { key: "Attribute Name (B)" }, { key: "Attribute Name (C)" },
     { key: "Vehicle Fitment | Year_Start", type: "number" }, { key: "Vehicle Fitment | Year_End", type: "number" },
     { key: "Vehicle Fitment | Engine" }, { key: "Vehicle Fitment | Trim" }, { key: "Vehicle Fitment | Drive_Type" },
     { key: "Vehicle Fitment | Fitment Notes", type: "textarea", wide: true },
@@ -205,11 +205,12 @@ export function ProductMasterForm({ open, onOpenChange, product, onSaved }: {
 }) {
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState("")
-  const [lookups, setLookups] = useState<ProductMasterLookups>({ categories: [], brands: [] })
+  const [lookups, setLookups] = useState<ProductMasterLookups>({ categories: [], brands: [], vehicles: [] })
   const [lookupError, setLookupError] = useState("")
   const [selectedCategoryId, setSelectedCategoryId] = useState("")
   const [selectedParentCategoryId, setSelectedParentCategoryId] = useState("")
   const [selectedBrandId, setSelectedBrandId] = useState("")
+  const [selectedVehicleId, setSelectedVehicleId] = useState("")
   const raw = rawObject(product)
   const value = (key: string, fallback = "") => Object.prototype.hasOwnProperty.call(raw, key) ? String(raw[key] ?? "") : fallback
   const fallback: Record<string, string> = {
@@ -222,6 +223,7 @@ export function ProductMasterForm({ open, onOpenChange, product, onSaved }: {
   const selectedCategory = lookups.categories.find((category) => category.id === selectedCategoryId) ?? null
   const selectedParentCategory = lookups.categories.find((category) => category.id === selectedParentCategoryId) ?? null
   const selectedBrand = lookups.brands.find((brand) => brand.id === selectedBrandId) ?? null
+  const selectedVehicle = lookups.vehicles.find((vehicle) => vehicle.id === selectedVehicleId) ?? null
   const brandCategoryNames = useMemo(() => selectedBrand?.categories.map((category) => category.name) ?? [], [selectedBrand])
 
   useEffect(() => {
@@ -233,7 +235,7 @@ export function ProductMasterForm({ open, onOpenChange, product, onSaved }: {
         const payload = await readJsonResponse<{ ok?: boolean; message?: string } & ProductMasterLookups>(response, "Unable to load product lookups")
         if (ignore) return
         if (!response.ok || !payload.ok) throw new Error(payload.message ?? "Unable to load product lookups")
-        const nextLookups = { categories: payload.categories ?? [], brands: payload.brands ?? [] }
+        const nextLookups = { categories: payload.categories ?? [], brands: payload.brands ?? [], vehicles: payload.vehicles ?? [] }
         setLookups(nextLookups)
         const currentRaw = rawObject(product)
         const currentValue = (key: string, fallbackValue = "") =>
@@ -241,12 +243,20 @@ export function ProductMasterForm({ open, onOpenChange, product, onSaved }: {
         const currentCategoryName = currentValue("Category Name", product?.category ?? "").toLowerCase()
         const currentParentValue = currentValue("Parent Category").toLowerCase()
         const currentBrandName = currentValue("Brand Name", product?.brand === "Unbranded" ? "" : product?.brand ?? "").toLowerCase()
+        const currentVehicleId = currentValue("Vehicle ID").toLowerCase()
+        const currentVehicleMake = currentValue("Vehicle Fitment | Make").toLowerCase()
+        const currentVehicleModel = currentValue("Vehicle Fitment | Model").toLowerCase()
         const category = nextLookups.categories.find((item) => item.name.toLowerCase() === currentCategoryName)
         const parent = nextLookups.categories.find((item) => item.id.toLowerCase() === currentParentValue || item.name.toLowerCase() === currentParentValue)
         const brand = nextLookups.brands.find((item) => item.name.toLowerCase() === currentBrandName)
+        const vehicle = nextLookups.vehicles.find((item) =>
+          item.id.toLowerCase() === currentVehicleId ||
+          (item.make.toLowerCase() === currentVehicleMake && item.model.toLowerCase() === currentVehicleModel),
+        )
         setSelectedCategoryId(category?.id ?? "")
         setSelectedParentCategoryId(parent?.id ?? category?.parentId ?? "")
         setSelectedBrandId(brand?.id ?? "")
+        setSelectedVehicleId(vehicle?.id ?? "")
         setLookupError("")
       } catch (cause) {
         if (!ignore) setLookupError(cause instanceof Error ? cause.message : "Unable to load product lookups")
@@ -340,6 +350,9 @@ export function ProductMasterForm({ open, onOpenChange, product, onSaved }: {
             <input type="hidden" name="Brand Name" value={selectedBrand?.name ?? ""} />
             <input type="hidden" name="Product Categories" value={brandCategoryNames.join(", ")} />
             <input type="hidden" name="Tier 1" value={selectedBrand?.tier ?? ""} />
+            <input type="hidden" name="Vehicle ID" value={selectedVehicle?.id ?? value("Vehicle ID")} />
+            <input type="hidden" name="Vehicle Fitment | Make" value={selectedVehicle?.make ?? value("Vehicle Fitment | Make")} />
+            <input type="hidden" name="Vehicle Fitment | Model" value={selectedVehicle?.model ?? value("Vehicle Fitment | Model")} />
             <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <div className="space-y-2">
                 <Label htmlFor="pm-category-select">Category Name <span className="text-destructive">*</span></Label>
@@ -360,6 +373,18 @@ export function ProductMasterForm({ open, onOpenChange, product, onSaved }: {
                 <select id="pm-brand-select" className={selectClassName} value={selectedBrandId} onChange={(event) => setSelectedBrandId(event.target.value)} required>
                   <option value="">Select brand</option>
                   {lookups.brands.map((brand) => <option key={brand.id} value={brand.id}>{brand.name}</option>)}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="pm-vehicle-select">Vehicle</Label>
+                <select id="pm-vehicle-select" className={selectClassName} value={selectedVehicleId} onChange={(event) => setSelectedVehicleId(event.target.value)}>
+                  <option value="">Select vehicle</option>
+                  {lookups.vehicles.map((vehicle) => (
+                    <option key={vehicle.id} value={vehicle.id}>
+                      {[vehicle.make, vehicle.model].filter(Boolean).join(" ")}
+                      {vehicle.tier ? ` - ${vehicle.tier}` : ""}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>

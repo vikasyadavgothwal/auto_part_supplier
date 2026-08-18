@@ -40,7 +40,15 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const showToast = useCallback(
     (toast: ToastInput) => {
       const id = Date.now() + Math.floor(Math.random() * 1000)
-      setToasts((current) => [...current.slice(-2), { ...toast, id }])
+      setToasts((current) => {
+        const duplicate = current.some(
+          (item) =>
+            item.type === toast.type &&
+            item.title === toast.title &&
+            item.message === toast.message,
+        )
+        return duplicate ? current : [...current.slice(-2), { ...toast, id }]
+      })
       window.setTimeout(() => dismissToast(id), 4500)
     },
     [dismissToast],

@@ -67,7 +67,6 @@ export function InventoryPageContent({
         page: String(page),
         pageSize: "10",
         q: query.trim(),
-        status: "mapped",
       })
       const response = await authenticatedFetch(`/api/supplier/parts?${params}`)
       const payload = (await response.json()) as SupplierPartsListResponse
