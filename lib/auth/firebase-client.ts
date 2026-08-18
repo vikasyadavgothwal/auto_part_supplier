@@ -21,6 +21,8 @@ const firebaseConfig = () =>
     ? config
     : { ...config, ...window.__AUTO_PARTS_FIREBASE_CONFIG__ }
 
+let runtimeConfigPromise: Promise<void> | null = null
+
 export const isFirebaseAuthConfigured = () =>
   [
     firebaseConfig().apiKey,
@@ -28,6 +30,23 @@ export const isFirebaseAuthConfigured = () =>
     firebaseConfig().projectId,
     firebaseConfig().appId,
   ].every((value) => Boolean(String(value ?? "").trim()))
+
+export const ensureFirebaseAuthConfigured = async () => {
+  if (isFirebaseAuthConfigured()) return true
+  if (typeof window === "undefined") return false
+
+  runtimeConfigPromise ??= new Promise<void>((resolve) => {
+    const script = document.createElement("script")
+    script.src = `/api/firebase-config.js?ts=${Date.now()}`
+    script.async = false
+    script.onload = () => resolve()
+    script.onerror = () => resolve()
+    document.head.appendChild(script)
+  })
+
+  await runtimeConfigPromise
+  return isFirebaseAuthConfigured()
+}
 
 export const getFirebaseAuth = () =>
   getAuth(getApps().length ? getApp() : initializeApp(firebaseConfig()))

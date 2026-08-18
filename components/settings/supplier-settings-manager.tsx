@@ -32,9 +32,9 @@ import { Label } from "@/components/ui/label"
 import { useToast } from "@/components/ui/toast-provider"
 import { authenticatedFetch } from "@/lib/auth/client"
 import {
+  ensureFirebaseAuthConfigured,
   getFirebaseAuth,
   getFirebaseAuthDiagnostics,
-  isFirebaseAuthConfigured,
 } from "@/lib/auth/firebase-client"
 import {
   formFromSupplierProfile,
@@ -958,17 +958,17 @@ export function SupplierSettingsManager({
       showFeedback("error", "Validation Error", "Enter a valid supplier contact number")
       return
     }
-    if (!isFirebaseAuthConfigured()) {
-      showFeedback(
-        "error",
-        "OTP Unavailable",
-        "Firebase phone authentication is not configured",
-      )
-      return
-    }
-
     setIsSendingSupplierContactOtp(true)
     try {
+      if (!(await ensureFirebaseAuthConfigured())) {
+        showFeedback(
+          "error",
+          "OTP Unavailable",
+          "Firebase phone authentication is not configured",
+        )
+        return
+      }
+
       const checkResponse = await authenticatedFetch(
         "/api/supplier/settings/mobile-otp/check",
         {
@@ -1019,7 +1019,7 @@ export function SupplierSettingsManager({
 
     try {
       if (!supplierContactVerificationId) throw new Error("Send OTP first")
-      if (!isFirebaseAuthConfigured()) {
+      if (!(await ensureFirebaseAuthConfigured())) {
         throw new Error("Firebase phone authentication is not configured")
       }
       const credential = PhoneAuthProvider.credential(
