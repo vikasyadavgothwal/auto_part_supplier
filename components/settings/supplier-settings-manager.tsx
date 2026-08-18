@@ -1298,8 +1298,9 @@ export function SupplierSettingsManager({
                     onChange={(event) =>
                       setSupplierContactOtp(normalizeDigits(event.target.value, 6))
                     }
-                    placeholder="OTP"
+                    placeholder="Enter 6-digit OTP"
                     inputMode="numeric"
+                    autoComplete="one-time-code"
                     maxLength={6}
                     className="border-border bg-brand-surface sm:max-w-32"
                   />
