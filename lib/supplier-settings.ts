@@ -30,7 +30,6 @@ export type SupplierProfileRecord = {
   addressLine2: string | null
   city: string | null
   state: string | null
-  postalCode: string | null
   country: string | null
   supplierApprovalStatus: string
   supplierApprovalRejectionReason: string | null
@@ -63,7 +62,6 @@ export type SupplierProfileFormValues = {
   addressLine2: string
   city: string
   state: string
-  postalCode: string
   country: string
 }
 
@@ -99,7 +97,6 @@ export const emptySupplierProfile: SupplierProfileRecord = {
   addressLine2: null,
   city: null,
   state: null,
-  postalCode: null,
   country: null,
   supplierApprovalStatus: "Pending",
   supplierApprovalRejectionReason: null,
@@ -155,7 +152,6 @@ export const formFromSupplierProfile = (
   addressLine2: profile.addressLine2 ?? "",
   city: profile.city ?? "",
   state: profile.state ?? "",
-  postalCode: profile.postalCode ?? "",
   country: profile.country ?? "",
 })
 
@@ -184,6 +180,5 @@ export const payloadFromSupplierForm = (form: SupplierProfileFormValues) => ({
   addressLine2: form.addressLine2.trim(),
   city: form.city.trim(),
   state: form.state.trim(),
-  postalCode: form.postalCode.trim(),
   country: form.country.trim(),
 })

@@ -25,7 +25,6 @@ const deliveryAddress = (order: LiveOrder) => [
   order.deliveryLandmark,
   order.deliveryCity,
   order.deliveryState,
-  order.deliveryPostalCode,
   order.deliveryCountry,
 ].filter(Boolean).join(", ") || "Not provided"
 const statusClass = (status: LiveOrder["status"]) => status === "delivered"

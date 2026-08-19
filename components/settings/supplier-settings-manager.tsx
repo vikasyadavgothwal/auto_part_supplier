@@ -65,7 +65,6 @@ type PendingDocumentUpload = {
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const MOBILE_PATTERN = /^\+\d{8,18}$/
-const POSTAL_CODE_PATTERN = /^\d{6}$/
 const ADDRESS_LINE_PATTERN = /^[A-Za-z0-9\s.,#'’/&()-]*$/
 const PLACE_NAME_PATTERN = /^[A-Za-z\s.'’()-]*$/
 const MAX_AVATAR_SIZE = 5 * 1024 * 1024
@@ -82,7 +81,6 @@ const ADDRESS_LIMITS = {
   addressLine2: 255,
   city: 120,
   state: 120,
-  postalCode: 6,
   country: 120,
 } as const
 const TRADE_LICENSE_MIN_LENGTH = 6
@@ -222,7 +220,6 @@ const labelForAddressField = (key: keyof typeof ADDRESS_LIMITS) =>
     addressLine2: "Address line 2",
     city: "City",
     state: "State",
-    postalCode: "Postal code",
     country: "Country",
   })[key]
 
@@ -530,7 +527,6 @@ export function SupplierSettingsManager({
     if (!form.addressLine1.trim()) return "Address line 1 is required"
     if (!form.city.trim()) return "City is required"
     if (!form.state.trim()) return "State is required"
-    if (!form.postalCode.trim()) return "Postal code is required"
     if (!form.country.trim()) return "Country is required"
     for (const [key, limit] of Object.entries(ADDRESS_LIMITS)) {
       const value = form[key as keyof typeof ADDRESS_LIMITS]
@@ -555,9 +551,6 @@ export function SupplierSettingsManager({
     }
     if (form.country && !PLACE_NAME_PATTERN.test(form.country)) {
       return "Country contains invalid characters"
-    }
-    if (form.postalCode && !POSTAL_CODE_PATTERN.test(form.postalCode)) {
-      return "Postal code must be exactly 6 digits"
     }
     return ""
   }
@@ -1851,21 +1844,6 @@ export function SupplierSettingsManager({
               onChange={(event) => setLimitedField("state", event.target.value)}
               maxLength={ADDRESS_LIMITS.state + 1}
               placeholder="Enter state or emirate"
-              className="border-border bg-brand-surface"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="postal-code">Postal Code<RequiredMark /></Label>
-            <Input
-              id="postal-code"
-              value={form.postalCode}
-              onChange={(event) =>
-                setField("postalCode", normalizeDigits(event.target.value, 6))
-              }
-              inputMode="numeric"
-              maxLength={ADDRESS_LIMITS.postalCode}
-              placeholder="Enter 6 digit postal code"
               className="border-border bg-brand-surface"
             />
           </div>
