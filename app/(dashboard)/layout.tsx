@@ -8,6 +8,7 @@ import { ToastProvider } from "@/components/ui/toast-provider"
 import { requireDashboardUser } from "@/lib/auth/server"
 import { requestBackend } from "@/lib/auth/backend"
 import { getSupplierSettings } from "@/lib/supplier-settings.server"
+import { getSiteBranding } from "@/lib/site-branding"
 
 type BusinessAccessPayload = {
   ok: boolean
@@ -48,17 +49,18 @@ export default async function DashboardLayout({
 }: {
   children: ReactNode
 }) {
-  const [user, profile, businessAccess] = await Promise.all([
+  const [user, profile, businessAccess, branding] = await Promise.all([
     requireDashboardUser("Supplier"),
     getSupplierSettings(),
     getBusinessAccess(),
+    getSiteBranding(),
   ])
 
   return (
     <SidebarProvider>
       <ToastProvider>
         <SessionKeepalive />
-        <AppSidebar profile={profile} visibleMenus={businessAccess.visibleMenus} planName={businessAccess.planName} isOwner={businessAccess.isOwner} />
+        <AppSidebar profile={profile} branding={branding} visibleMenus={businessAccess.visibleMenus} planName={businessAccess.planName} isOwner={businessAccess.isOwner} />
         <SidebarInset className="min-h-svh min-w-0 overflow-x-hidden bg-brand-surface">
           <DashboardHeader user={user} />
           <div className="flex min-w-0 flex-1 flex-col overflow-x-hidden p-4 lg:p-6">
