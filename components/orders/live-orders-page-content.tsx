@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { authenticatedFetch } from "@/lib/auth/client"
+import { useToast } from "@/components/ui/toast-provider"
 import type { LiveOrder, OrderPagination, OrderSummary } from "./live-types"
 
 const money = (amount: number) => `AED ${amount.toLocaleString("en-AE", { minimumFractionDigits: 2 })}`
@@ -59,6 +60,7 @@ export function LiveOrdersPageContent({
   initialPagination: OrderPagination
   initialSummary: OrderSummary
 }) {
+  const { showToast } = useToast()
   const [orders, setOrders] = React.useState(initialOrders)
   const [pagination, setPagination] = React.useState(initialPagination)
   const [summary, setSummary] = React.useState(initialSummary)
@@ -118,7 +120,12 @@ export function LiveOrdersPageContent({
       const payload = await response.json() as { ok: boolean; order?: LiveOrder; message?: string }
       if (!response.ok || !payload.ok || !payload.order) throw new Error(payload.message || "Unable to submit proof")
       replaceOrder(payload.order); setProofFile(null); setBatchItemIds([])
-      setActionMessage(payload.order.status === "delivered" ? "All items delivered. The customer has been notified." : "Delivery batch submitted. The customer has been notified.")
+      const message = payload.order.status === "delivered"
+        ? "All items delivered. The customer has been notified."
+        : "Delivery batch submitted. The customer has been notified."
+      showToast({ type: "success", title: "Delivery updated", message })
+      setSelected(null)
+      setActionMessage("")
     } catch (caught) { setActionMessage(caught instanceof Error ? caught.message : "Unable to submit proof") }
     finally { setActionPending(false) }
   }
