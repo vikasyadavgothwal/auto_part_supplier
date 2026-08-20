@@ -13,12 +13,14 @@ export function ChangePlanButton({
   planId,
   planName,
   actionLabel,
+  isDowngrade,
 }: {
   businessAccountId: string
   currentPlanName: string
   planId: string
   planName: string
   actionLabel: string
+  isDowngrade: boolean
 }) {
   const router = useRouter()
   const { showToast } = useToast()
@@ -32,14 +34,24 @@ export function ChangePlanButton({
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ businessAccountId, planId }),
     })
-    const result = (await response.json().catch(() => null)) as { message?: string } | null
+    const result = (await response.json().catch(() => null)) as {
+      message?: string
+      change?: { status?: string; effectiveAt?: string }
+    } | null
     setSaving(false)
     if (!response.ok) {
       showToast({ type: "error", title: "Unable to change plan", message: result?.message ?? "Unable to change plan." })
       return
     }
     setIsDialogOpen(false)
-    showToast({ type: "success", title: "Plan updated", message: `Plan changed to ${planName}.` })
+    if (result?.change?.status === "scheduled") {
+      const date = result.change.effectiveAt
+        ? new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(result.change.effectiveAt))
+        : "the end of your current billing period"
+      showToast({ type: "success", title: "Downgrade scheduled", message: `${planName} activates on ${date}.` })
+    } else {
+      showToast({ type: "success", title: "Plan upgraded", message: `${planName} is active now.` })
+    }
     router.refresh()
   }
 
@@ -51,9 +63,11 @@ export function ChangePlanButton({
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Change plan</DialogTitle>
+            <DialogTitle>{isDowngrade ? "Schedule downgrade" : "Upgrade plan"}</DialogTitle>
             <DialogDescription>
-              Change plan from {currentPlanName} to {planName}.
+              {isDowngrade
+                ? `${currentPlanName} remains active until its current billing period ends. ${planName} activates automatically after that.`
+                : `${planName} activates immediately and replaces ${currentPlanName}.`}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -61,7 +75,7 @@ export function ChangePlanButton({
               <Button type="button" variant="outline" disabled={saving}>Cancel</Button>
             </DialogClose>
             <Button type="button" onClick={() => void changePlan()} disabled={saving}>
-              {saving ? "Updating..." : "Confirm change"}
+              {saving ? "Updating..." : isDowngrade ? "Schedule downgrade" : "Confirm upgrade"}
             </Button>
           </DialogFooter>
         </DialogContent>
