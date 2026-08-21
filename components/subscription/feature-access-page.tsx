@@ -395,10 +395,16 @@ export function SupplierFeatureAccessPage({
           note,
           categoryIds: featureKey === "marketplace.featured-vendor" ? featuredCategoryIds : undefined,
           validityDays: featureKey === "marketplace.featured-vendor" ? validityDays : undefined,
+          paymentSuccessUrl: `${window.location.origin}/add-ons?payment=success&session_id={CHECKOUT_SESSION_ID}`,
+          paymentCancelUrl: `${window.location.origin}/add-ons?payment=cancelled`,
         }),
       })
       const payload = await response.json().catch(() => ({}))
       if (!response.ok || payload?.ok === false) throw new Error(payload?.message ?? "Unable to request add-on")
+      if (payload?.addOnRequest?.payment?.checkoutUrl) {
+        window.location.assign(payload.addOnRequest.payment.checkoutUrl)
+        return
+      }
       const addOnPayload = await fetchAddOns()
       setAddOns(addOnPayload.addOnRequests)
       setAddOnTransactions(await fetchAddOnTransactions())
